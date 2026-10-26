@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terms of Service — CalcHack</title>
+<meta name="description" content="The rules for using CalcHack, including billing, cancellation and refunds.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237c5cff'/%3E%3Cstop offset='1' stop-color='%232fe6a8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Cpath d='M12 46 Q32 6 52 46' fill='none' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M36 18 L26 34 h8 L30 48 L44 30 h-9 z' fill='%23ffe14d'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0a0e1a; --bg2:#0d1322; --card:#141a2e; --line:#232c4d;
+  --text:#eef1fb; --muted:#8b93b0; --primary:#7c5cff; --accent:#2fe6a8;
+}
+@media (prefers-color-scheme: light){
+  :root{
+    --bg:#f5f7fc; --bg2:#eceff8; --card:#ffffff; --line:#dde2ee;
+    --text:#181d30; --muted:#5d6580; --accent:#0ca678;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif;
+  line-height:1.65;-webkit-font-smoothing:antialiased;
+}
+.bar{border-bottom:1px solid var(--line);background:var(--bg2)}
+.bar .in{max-width:760px;margin:0 auto;padding:16px 20px;display:flex;align-items:center;gap:10px}
+.bar a{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);font-weight:800;font-size:18px;letter-spacing:-.3px}
+.bar .hack{background:linear-gradient(90deg,var(--primary),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+main{max-width:760px;margin:0 auto;padding:40px 20px 90px}
+h1{font-size:clamp(28px,5vw,36px);letter-spacing:-.9px;line-height:1.2}
+.upd{color:var(--muted);font-size:13.5px;margin-top:10px}
+.lede{font-size:16.5px;color:var(--text);margin-top:22px}
+h2{font-size:19px;letter-spacing:-.3px;margin-top:38px;padding-top:26px;border-top:1px solid var(--line)}
+p{margin-top:12px;font-size:15px;color:var(--muted)}
+p b,li b{color:var(--text);font-weight:700}
+ul{margin:12px 0 0 20px}
+li{margin-top:9px;font-size:15px;color:var(--muted)}
+a{color:var(--accent)}
+.note{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:16px 18px;margin-top:20px;
+}
+.note p{margin-top:0;font-size:14.5px}
+table{width:100%;border-collapse:collapse;margin-top:16px;font-size:14.5px}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--text);font-weight:700;font-size:12px;letter-spacing:.6px;text-transform:uppercase}
+td{color:var(--muted)}
+td:first-child{color:var(--text);font-weight:650;white-space:nowrap}
+footer{border-top:1px solid var(--line);margin-top:56px;padding-top:24px;font-size:12.5px;color:var(--muted)}
+footer a{margin-right:16px}
+/* the three-column table is unreadable on a phone — stack it into blocks */
+@media (max-width:640px){
+  table tr:first-child{display:none}
+  table,tbody,table tr,table td{display:block;width:100%}
+  table tr{border-bottom:1px solid var(--line);padding:14px 0}
+  table td{border:none;padding:0}
+  table td:first-child{font-size:15.5px;margin-bottom:5px;white-space:normal}
+  table td:nth-child(3){font-size:13.5px;margin-top:6px;opacity:.85}
+  table td:nth-child(3)::before{content:"Stored: ";font-weight:700;color:var(--text)}
+}
+</style>
+</head>
+<body>
+
+<div class="bar"><div class="in">
+  <a href="/">
+    <svg width="24" height="24" viewBox="0 0 64 64"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#2fe6a8"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="url(#lg)"/><path d="M12 46 Q32 6 52 46" fill="none" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M36 18 L26 34 h8 L30 48 L44 30 h-9 z" fill="#ffe14d"/></svg>
+    <span>Calc<span class="hack">Hack</span></span>
+  </a>
+</div></div>
+
+<main>
+  <h1>Terms of Service</h1>
+  <p class="upd">Last updated 20 September 2026</p>
+
+  <p class="lede">These are the rules for using CalcHack. Using the site means you accept them. They are short on purpose.</p>
+
+  <h2>What CalcHack is</h2>
+  <p>CalcHack reads a photo of a math question and explains how to solve it using the Desmos graphing calculator. It is a study aid. It is not a tutor, not a grading service, and not a substitute for learning the material.</p>
+
+  <h2>It will sometimes be wrong</h2>
+  <p>CalcHack uses an AI model to read questions and produce walkthroughs. AI models make mistakes — misreading a number, choosing a clumsy method, or producing a wrong answer outright. <b>Always check the work against your own understanding.</b> We do not guarantee accuracy, and we are not responsible for a grade, a test score, or any other outcome that follows from using it.</p>
+
+  <h2>Use it honestly</h2>
+  <p>CalcHack is for practice and studying. Do not use it during an exam, a proctored test, or anywhere your school or College Board prohibits outside assistance. Doing so is cheating, it is on you, and it can carry consequences far worse than a missed question.</p>
+
+  <h2>Your account</h2>
+  <p>You may create an account with an email address or with Google. Keep your password to yourself; you are responsible for what happens under your account. Give us a real email — it is how we would reach you about a billing problem.</p>
+  <p>We may suspend an account that abuses the service: scripted or automated scanning, attempts to break the free-scan limits, reselling access, or trying to extract the underlying system.</p>
+
+  <h2>Free plan and Pro</h2>
+  <p>The free plan includes a set number of scans each day, currently five, and that number may change. Pro removes the daily limit and costs <b>$6.99 per month</b> or <b>$39.99 per year</b> in US dollars.</p>
+  <p><b>Both plans renew automatically.</b> A monthly plan charges $6.99 today and $6.99 every month after that until you cancel. An annual plan charges $39.99 today and $39.99 every year after that until you cancel. You are shown these terms before you pay, and again on Stripe's checkout page.</p>
+  <ul>
+    <li><b>You are charged automatically</b> at the start of each new period, using the payment method you gave Stripe.</li>
+    <li><b>You can cancel any time</b> from Settings → Manage or cancel, which opens Stripe's billing portal. Cancelling stops the next charge.</li>
+    <li><b>Cancelling keeps your access</b> until the end of the period you already paid for. It is not cut off early.</li>
+    <li><b>Prices can change,</b> but not for a period you have already paid for, and you'll be told before a change takes effect.</li>
+  </ul>
+
+  <h2>Refunds</h2>
+  <p>If CalcHack isn't what you expected, email us within <b>14 days</b> of the charge and we will refund it. No form, no argument. Beyond 14 days we'll look at it case by case. Refunds go back to the card you paid with and typically take five to ten business days to appear.</p>
+
+  <h2>Payments</h2>
+  <p>Payments are processed by Stripe. Card details go to Stripe directly and never touch our servers. Your use of Stripe's checkout is also governed by Stripe's own terms.</p>
+
+  <h2>Things we can't promise</h2>
+  <p>CalcHack is provided "as is". We can't promise it will always be available — it depends on services we don't control, including the AI provider and Desmos, and any of them can go down. To the maximum extent the law allows, our total liability to you for any claim is limited to the amount you paid us in the twelve months before it arose.</p>
+
+  <h2>Where this is offered</h2>
+  <p>CalcHack is offered to students in the United States. We don't market it elsewhere, and it's priced and billed in US dollars.</p>
+
+  <h2>If you're under 18</h2>
+  <p>Most people using CalcHack are high school students. If you are under 18, get a parent or guardian's permission before buying a membership, and use their payment method only with their knowledge.</p>
+
+  <h2>Ending things</h2>
+  <p>You can stop using CalcHack whenever you like and delete your account by emailing us. We may end service to an account that breaks these terms; if we do that to a paid account without cause, we'll refund the unused portion.</p>
+
+  <h2>Contact</h2>
+  <p>Anything at all: <a href="mailto:support@calchack.net">support@calchack.net</a></p>
+
+  <div class="note">
+    <p>CalcHack is an independent study tool. It is not affiliated with, endorsed by, or sponsored by College Board, Desmos, or Google. SAT® is a registered trademark of College Board.</p>
+  </div>
+
+  <footer>
+    <a href="/">CalcHack</a><a href="/privacy.html">Privacy Policy</a>
+    <div style="margin-top:10px">© 2026 CalcHack</div>
+  </footer>
+</main>
+
+</body>
+</html>

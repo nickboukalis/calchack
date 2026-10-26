@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — CalcHack</title>
+<meta name="description" content="What CalcHack collects, what it doesn't, and who it shares data with.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237c5cff'/%3E%3Cstop offset='1' stop-color='%232fe6a8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Cpath d='M12 46 Q32 6 52 46' fill='none' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M36 18 L26 34 h8 L30 48 L44 30 h-9 z' fill='%23ffe14d'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0a0e1a; --bg2:#0d1322; --card:#141a2e; --line:#232c4d;
+  --text:#eef1fb; --muted:#8b93b0; --primary:#7c5cff; --accent:#2fe6a8;
+}
+@media (prefers-color-scheme: light){
+  :root{
+    --bg:#f5f7fc; --bg2:#eceff8; --card:#ffffff; --line:#dde2ee;
+    --text:#181d30; --muted:#5d6580; --accent:#0ca678;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif;
+  line-height:1.65;-webkit-font-smoothing:antialiased;
+}
+.bar{border-bottom:1px solid var(--line);background:var(--bg2)}
+.bar .in{max-width:760px;margin:0 auto;padding:16px 20px;display:flex;align-items:center;gap:10px}
+.bar a{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);font-weight:800;font-size:18px;letter-spacing:-.3px}
+.bar .hack{background:linear-gradient(90deg,var(--primary),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+main{max-width:760px;margin:0 auto;padding:40px 20px 90px}
+h1{font-size:clamp(28px,5vw,36px);letter-spacing:-.9px;line-height:1.2}
+.upd{color:var(--muted);font-size:13.5px;margin-top:10px}
+.lede{font-size:16.5px;color:var(--text);margin-top:22px}
+h2{font-size:19px;letter-spacing:-.3px;margin-top:38px;padding-top:26px;border-top:1px solid var(--line)}
+p{margin-top:12px;font-size:15px;color:var(--muted)}
+p b,li b{color:var(--text);font-weight:700}
+ul{margin:12px 0 0 20px}
+li{margin-top:9px;font-size:15px;color:var(--muted)}
+a{color:var(--accent)}
+.note{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:16px 18px;margin-top:20px;
+}
+.note p{margin-top:0;font-size:14.5px}
+table{width:100%;border-collapse:collapse;margin-top:16px;font-size:14.5px}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--text);font-weight:700;font-size:12px;letter-spacing:.6px;text-transform:uppercase}
+td{color:var(--muted)}
+td:first-child{color:var(--text);font-weight:650;white-space:nowrap}
+footer{border-top:1px solid var(--line);margin-top:56px;padding-top:24px;font-size:12.5px;color:var(--muted)}
+footer a{margin-right:16px}
+/* the three-column table is unreadable on a phone — stack it into blocks */
+@media (max-width:640px){
+  table tr:first-child{display:none}
+  table,tbody,table tr,table td{display:block;width:100%}
+  table tr{border-bottom:1px solid var(--line);padding:14px 0}
+  table td{border:none;padding:0}
+  table td:first-child{font-size:15.5px;margin-bottom:5px;white-space:normal}
+  table td:nth-child(3){font-size:13.5px;margin-top:6px;opacity:.85}
+  table td:nth-child(3)::before{content:"Stored: ";font-weight:700;color:var(--text)}
+}
+</style>
+</head>
+<body>
+
+<div class="bar"><div class="in">
+  <a href="/">
+    <svg width="24" height="24" viewBox="0 0 64 64"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#2fe6a8"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="url(#lg)"/><path d="M12 46 Q32 6 52 46" fill="none" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M36 18 L26 34 h8 L30 48 L44 30 h-9 z" fill="#ffe14d"/></svg>
+    <span>Calc<span class="hack">Hack</span></span>
+  </a>
+</div></div>
+
+<main>
+  <h1>Privacy Policy</h1>
+  <p class="upd">Last updated 20 September 2026</p>
+
+  <p class="lede">CalcHack is a study tool that reads a photo of an SAT math question and explains how to solve it in Desmos. This page describes exactly what it collects and who it passes data to. It is written to be read, not to be skimmed past.</p>
+
+  <h2>What we collect</h2>
+  <table>
+    <tr><th>Data</th><th>Why</th><th>Where it lives</th></tr>
+    <tr><td>Your email address</td><td>Only if you create an account. It identifies you so a membership follows you between devices.</td><td>Supabase (our accounts provider)</td></tr>
+    <tr><td>Question photos</td><td>Sent to an AI model to read the question and produce the walkthrough.</td><td>Not stored by us. Passed through and discarded.</td></tr>
+    <tr><td>Scan history</td><td>So you can reopen past walkthroughs, on any device you sign in from.</td><td>Your browser. Signed in, a copy also syncs to your account on our server.</td></tr>
+    <tr><td>A random device ID</td><td>Counts your free daily scans so a page refresh doesn't reset them.</td><td>Your browser, plus a counter on our server</td></tr>
+    <tr><td>Membership status</td><td>Tells the app whether you're on the free or paid plan.</td><td>Our server, keyed to your account</td></tr>
+  </table>
+
+  <h2>What we don't collect</h2>
+  <ul>
+    <li><b>Card numbers.</b> Payments are handled entirely by Stripe on Stripe's own pages. Card details never pass through our systems, and we never see them.</li>
+    <li><b>Your name, school, age, or location.</b> We don't ask and we don't store them.</li>
+    <li><b>Analytics or advertising trackers.</b> There are none on this site. Nobody is paying us to profile you.</li>
+    <li><b>Your reports, tied to you.</b> If you report a wrong answer we keep the question and your note for six months to fix it. Your email is attached only if you were signed in.</li>
+    <li><b>Your photos, after processing.</b> An uploaded image is used to answer that one question and is not retained.</li>
+  </ul>
+
+  <h2>Who we share data with</h2>
+  <p>CalcHack is a small independent project and relies on a handful of established services to run. Each one receives only what it needs:</p>
+  <ul>
+    <li><b>Google (Gemini API)</b> — receives the photo and question text to generate the walkthrough.</li>
+    <li><b>Supabase</b> — stores your email and password if you create an account.</li>
+    <li><b>Stripe</b> — handles payment, and holds your billing details under its own privacy policy.</li>
+    <li><b>Cloudflare</b> — runs the server that processes scans and enforces free-scan limits.</li>
+    <li><b>Netlify</b> — hosts this website.</li>
+    <li><b>Desmos</b> — renders the interactive graph inside the app.</li>
+  </ul>
+  <p>We do not sell personal data, and we have no arrangement with anyone to share it for advertising.</p>
+
+  <h2>Google sign-in</h2>
+  <p>If you sign in with Google, we receive your email address and nothing else. We do not request access to your Gmail, Drive, contacts, calendar, or any other Google service, and CalcHack's use of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+
+  <h2>Who this is for</h2>
+  <p>CalcHack is built for students taking the SAT in the United States, and that's who it's offered to. We don't target or advertise to people outside the US. If you use it from elsewhere, the data described above is processed on servers in the United States.</p>
+
+  <h2>Students under 18</h2>
+  <p>CalcHack is built for high school students, so many of the people using it are minors. We collect as little as possible for that reason. CalcHack is not intended for children under 13, and we do not knowingly collect information from them. If you are under 18, please get a parent or guardian's permission before buying a membership.</p>
+
+  <h2>How long we keep things</h2>
+  <p>Nothing is kept indefinitely "just in case":</p>
+  <table>
+    <tr><th>Data</th><th>Kept for</th></tr>
+    <tr><td>Question photos</td><td>Not kept. Passed to the AI to answer that one question and discarded.</td></tr>
+    <tr><td>Account email</td><td>Until you delete your account.</td></tr>
+    <tr><td>Synced scan history</td><td>Your most recent 60 scans, until you delete your account or clear your history.</td></tr>
+    <tr><td>Free-scan counters</td><td>48 hours.</td></tr>
+    <tr><td>Wrong-answer reports</td><td>6 months, then deleted automatically.</td></tr>
+    <tr><td>Payment records</td><td>Held by Stripe under their retention rules, which we don't control.</td></tr>
+  </table>
+
+  <h2>Deleting your data</h2>
+  <p>Your scan history is stored in your own browser — <b>Settings → Delete all</b> inside the app clears it instantly, and so does clearing your browser data. To delete your account entirely, use <b>Settings → Delete my account</b>: it erases your synced history, cancels any subscription so you're never billed again, and removes the account. If anything is left over, email us and we'll finish it within seven days.</p>
+
+  <h2>Security</h2>
+  <p>Traffic to and from CalcHack is encrypted over HTTPS. Passwords are hashed by Supabase and are never visible to us. No system is perfect, and we'd rather say that plainly than promise otherwise.</p>
+
+  <h2>Changes</h2>
+  <p>If this policy changes in a way that affects what we collect, the date at the top of this page changes with it.</p>
+
+  <h2>Contact</h2>
+  <p>Questions, deletion requests, or anything else: <a href="mailto:support@calchack.net">support@calchack.net</a></p>
+
+  <div class="note">
+    <p>CalcHack is an independent study tool. It is not affiliated with, endorsed by, or sponsored by College Board, Desmos, or Google. SAT® is a registered trademark of College Board.</p>
+  </div>
+
+  <footer>
+    <a href="/">CalcHack</a><a href="/terms.html">Terms of Service</a>
+    <div style="margin-top:10px">© 2026 CalcHack</div>
+  </footer>
+</main>
+
+</body>
+</html>

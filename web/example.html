@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A worked SAT question — CalcHack</title>
+<meta name="description" content="One real SAT math question solved step by step in Desmos. No signup needed.">
+<meta property="og:title" content="A worked SAT question — CalcHack">
+<meta property="og:description" content="One real SAT math question solved step by step in Desmos. No signup needed.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237c5cff'/%3E%3Cstop offset='1' stop-color='%232fe6a8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Cpath d='M12 46 Q32 6 52 46' fill='none' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M36 18 L26 34 h8 L30 48 L44 30 h-9 z' fill='%23ffe14d'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0a0e1a; --bg2:#0d1322; --card:#141a2e; --card2:#1b2340; --line:#232c4d;
+  --text:#eef1fb; --muted:#8b93b0; --primary:#7c5cff; --primary2:#5b8cff; --accent:#2fe6a8; --gold:#ffe14d;
+  --chip:#0d1222; --chipb:#2a3560; --r:18px;
+}
+@media (prefers-color-scheme: light){
+  :root{--bg:#f5f7fc;--bg2:#eceff8;--card:#fff;--card2:#e9ecf5;--line:#dde2ee;
+        --text:#181d30;--muted:#5d6580;--accent:#0ca678;--chip:#f3f0ff;--chipb:#d9d2f7;--gold:#9a7b00}
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);line-height:1.62;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.bar{border-bottom:1px solid var(--line);background:var(--bg2);position:sticky;top:0;z-index:5}
+.bar .in{max-width:820px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.bar a.wm{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);font-weight:800;font-size:18px;letter-spacing:-.3px}
+.hack{background:linear-gradient(90deg,var(--primary),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.cta{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;text-decoration:none;
+  font-weight:800;font-size:13.5px;padding:9px 16px;border-radius:999px;white-space:nowrap}
+main{max-width:820px;margin:0 auto;padding:38px 20px 80px}
+h1{font-size:clamp(27px,5.2vw,38px);letter-spacing:-1px;line-height:1.14}
+.lede{font-size:16.5px;color:var(--muted);margin-top:14px;max-width:62ch}
+h2{font-size:20px;letter-spacing:-.3px;margin-top:44px}
+p{margin-top:12px;font-size:15px;color:var(--muted)}
+p b,li b,td b{color:var(--text);font-weight:700}
+a{color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-top:16px}
+.lbl{font-size:10.5px;font-weight:800;letter-spacing:1.1px;color:var(--muted);text-transform:uppercase}
+.verdict{display:flex;gap:13px;align-items:flex-start;background:rgba(47,230,168,.08);
+  border:1px solid rgba(47,230,168,.3);border-radius:var(--r);padding:16px;margin-top:22px}
+.verdict .em{font-size:22px;line-height:1}
+.verdict b{display:block;font-size:15.5px;color:var(--text)}
+.verdict span{font-size:13.5px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+.chip{font-size:11.5px;font-weight:700;color:var(--muted);background:var(--chip);
+  border:1px solid var(--chipb);padding:5px 10px;border-radius:9px}
+.chip.hl{color:var(--accent);border-color:rgba(47,230,168,.4)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.ent{display:flex;align-items:center;gap:10px;background:var(--chip);border:1px solid var(--chipb);
+  border-radius:12px;padding:11px 13px;margin-top:9px}
+.ent .k{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14.5px;color:var(--accent);font-weight:600}
+.ent .note{font-size:12px;color:var(--muted);margin-left:auto;text-align:right}
+.step{display:flex;gap:14px;margin-top:22px}
+.step .n{flex:0 0 auto;width:28px;height:28px;border-radius:50%;background:var(--card2);color:var(--accent);
+  font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.step h3{font-size:16px;letter-spacing:-.2px}
+.step p{margin-top:5px}
+.see{font-size:13px;color:var(--muted);background:var(--card);border-left:2px solid var(--accent);
+  padding:9px 13px;border-radius:0 10px 10px 0;margin-top:11px}
+.graph{width:100%;height:auto;border-radius:14px;border:1px solid var(--chipb);margin-top:14px;display:block}
+.graph .g{stroke:#e6e9f2;stroke-width:1}
+.graph .ax{stroke:#9aa3bb;stroke-width:1.6}
+.graph .curve{fill:none;stroke:#2d70f7;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round}
+.graph .pt{fill:#111827;stroke:#fff;stroke-width:2.5}
+.graph .tk{font-size:12px;fill:#6b7280;font-family:sans-serif}
+.graph .lbl{font-size:14px;font-weight:700;fill:#111827;font-family:sans-serif}
+.answer{background:rgba(47,230,168,.09);border:1px solid rgba(47,230,168,.4);border-radius:var(--r);padding:18px;margin-top:26px}
+.answer .big{font-size:30px;font-weight:800;color:var(--accent);letter-spacing:-.5px;margin-top:4px}
+.trap{background:rgba(255,107,129,.07);border:1px solid rgba(255,107,129,.32);border-radius:var(--r);padding:16px;margin-top:16px}
+.trap .lbl{color:#ff6b81}
+.end{text-align:center;margin-top:54px;padding-top:34px;border-top:1px solid var(--line)}
+.end h2{margin-top:0}
+.end .cta{display:inline-block;font-size:15px;padding:14px 30px;margin-top:18px}
+.end p{max-width:46ch;margin-left:auto;margin-right:auto}
+table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);font-weight:800}
+td{color:var(--muted)}
+td:first-child{white-space:nowrap}
+td.k{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--accent);font-weight:600}
+footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+footer a{margin-right:15px}
+@media (max-width:620px){
+  table td:first-child{white-space:normal}
+  .ent{flex-direction:column;align-items:flex-start;gap:4px}
+  .ent .note{margin-left:0;text-align:left}
+}
+</style>
+</head>
+<body>
+<div class="bar"><div class="in">
+  <a class="wm" href="/">
+    <svg width="24" height="24" viewBox="0 0 64 64"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#2fe6a8"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="url(#lg)"/><path d="M12 46 Q32 6 52 46" fill="none" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M36 18 L26 34 h8 L30 48 L44 30 h-9 z" fill="#ffe14d"/></svg>
+    <span>Calc<span class="hack">Hack</span></span>
+  </a>
+  <a class="cta" href="/">Try it free</a>
+</div></div>
+<main>
+  <h1>What CalcHack gives you</h1>
+  <p class="lede">One real SAT question, solved the way the app would solve it. No signup, nothing to install — this is just the output.</p>
+
+  <div class="card" style="margin-top:26px">
+    <div class="lbl">The question</div>
+    <p style="color:var(--text);font-size:16px;margin-top:6px">If <span class="mono">f(x) = 2x² − 7x + 3</span>, what is the sum of the solutions of <span class="mono">f(x) = 0</span>?</p>
+  </div>
+
+  <div class="verdict">
+    <span class="em">⚡</span>
+    <span><b>Desmos is the fastest way here</b>
+    <span>It shows both zeros instantly — no factoring, no quadratic formula, no sign mistakes.</span></span>
+  </div>
+
+  <div class="chips">
+    <span class="chip">Quadratics</span><span class="chip">Medium</span><span class="chip hl">⏱ ~35 sec</span>
+  </div>
+
+  <h2>Step by step</h2>
+
+  <div class="step"><div class="n">1</div><div>
+    <h3>Graph the function</h3>
+    <p>Type the function exactly as written. Desmos draws the parabola immediately — you're looking for where it crosses the x-axis.</p>
+    <div class="ent"><span class="k">y=2x^{2}-7x+3</span><span class="note">A parabola opening upward appears</span></div>
+    <svg viewBox="0 0 640 420" class="graph" role="img" aria-label="Parabola y equals 2x squared minus 7x plus 3 crossing the x-axis at 0.5 and 3">
+  <rect width="640" height="420" fill="#ffffff"/>
+  <line x1="0.0" y1="0" x2="0.0" y2="420" class="g"/><line x1="80.0" y1="0" x2="80.0" y2="420" class="g"/><line x1="160.0" y1="0" x2="160.0" y2="420" class="g"/><line x1="240.0" y1="0" x2="240.0" y2="420" class="g"/><line x1="320.0" y1="0" x2="320.0" y2="420" class="g"/><line x1="400.0" y1="0" x2="400.0" y2="420" class="g"/><line x1="480.0" y1="0" x2="480.0" y2="420" class="g"/><line x1="560.0" y1="0" x2="560.0" y2="420" class="g"/><line x1="640.0" y1="0" x2="640.0" y2="420" class="g"/><line x1="0" y1="420.0" x2="640" y2="420.0" class="g"/><line x1="0" y1="390.0" x2="640" y2="390.0" class="g"/><line x1="0" y1="360.0" x2="640" y2="360.0" class="g"/><line x1="0" y1="330.0" x2="640" y2="330.0" class="g"/><line x1="0" y1="300.0" x2="640" y2="300.0" class="g"/><line x1="0" y1="270.0" x2="640" y2="270.0" class="g"/><line x1="0" y1="240.0" x2="640" y2="240.0" class="g"/><line x1="0" y1="210.0" x2="640" y2="210.0" class="g"/><line x1="0" y1="180.0" x2="640" y2="180.0" class="g"/><line x1="0" y1="150.0" x2="640" y2="150.0" class="g"/><line x1="0" y1="120.0" x2="640" y2="120.0" class="g"/><line x1="0" y1="90.0" x2="640" y2="90.0" class="g"/><line x1="0" y1="60.0" x2="640" y2="60.0" class="g"/><line x1="0" y1="30.0" x2="640" y2="30.0" class="g"/><line x1="0" y1="0.0" x2="640" y2="0.0" class="g"/>
+  <line x1="0" y1="270.0" x2="640" y2="270.0" class="ax"/>
+  <line x1="160.0" y1="0" x2="160.0" y2="420" class="ax"/>
+  <text x="4.0" y="285.0" class="tk">-2</text><text x="84.0" y="285.0" class="tk">-1</text><text x="244.0" y="285.0" class="tk">1</text><text x="324.0" y="285.0" class="tk">2</text><text x="404.0" y="285.0" class="tk">3</text><text x="484.0" y="285.0" class="tk">4</text><text x="564.0" y="285.0" class="tk">5</text><text x="644.0" y="285.0" class="tk">6</text><text x="166.0" y="394.0" class="tk">-4</text><text x="166.0" y="334.0" class="tk">-2</text><text x="166.0" y="214.0" class="tk">2</text><text x="166.0" y="154.0" class="tk">4</text><text x="166.0" y="94.0" class="tk">6</text><text x="166.0" y="34.0" class="tk">8</text>
+  <polyline points="104.0,3.6 106.7,13.3 109.3,22.9 112.0,32.4 114.7,41.7 117.3,50.9 120.0,60.0 122.7,68.9 125.3,77.7 128.0,86.4 130.7,94.9 133.3,103.3 136.0,111.6 138.7,119.7 141.3,127.7 144.0,135.6 146.7,143.3 149.3,150.9 152.0,158.4 154.7,165.7 157.3,172.9 160.0,180.0 162.7,186.9 165.3,193.7 168.0,200.4 170.7,206.9 173.3,213.3 176.0,219.6 178.7,225.7 181.3,231.7 184.0,237.6 186.7,243.3 189.3,248.9 192.0,254.4 194.7,259.7 197.3,264.9 200.0,270.0 202.7,274.9 205.3,279.7 208.0,284.4 210.7,288.9 213.3,293.3 216.0,297.6 218.7,301.7 221.3,305.7 224.0,309.6 226.7,313.3 229.3,316.9 232.0,320.4 234.7,323.7 237.3,326.9 240.0,330.0 242.7,332.9 245.3,335.7 248.0,338.4 250.7,340.9 253.3,343.3 256.0,345.6 258.7,347.7 261.3,349.7 264.0,351.6 266.7,353.3 269.3,354.9 272.0,356.4 274.7,357.7 277.3,358.9 280.0,360.0 282.7,360.9 285.3,361.7 288.0,362.4 290.7,362.9 293.3,363.3 296.0,363.6 298.7,363.7 301.3,363.7 304.0,363.6 306.7,363.3 309.3,362.9 312.0,362.4 314.7,361.7 317.3,360.9 320.0,360.0 322.7,358.9 325.3,357.7 328.0,356.4 330.7,354.9 333.3,353.3 336.0,351.6 338.7,349.7 341.3,347.7 344.0,345.6 346.7,343.3 349.3,340.9 352.0,338.4 354.7,335.7 357.3,332.9 360.0,330.0 362.7,326.9 365.3,323.7 368.0,320.4 370.7,316.9 373.3,313.3 376.0,309.6 378.7,305.7 381.3,301.7 384.0,297.6 386.7,293.3 389.3,288.9 392.0,284.4 394.7,279.7 397.3,274.9 400.0,270.0 402.7,264.9 405.3,259.7 408.0,254.4 410.7,248.9 413.3,243.3 416.0,237.6 418.7,231.7 421.3,225.7 424.0,219.6 426.7,213.3 429.3,206.9 432.0,200.4 434.7,193.7 437.3,186.9 440.0,180.0 442.7,172.9 445.3,165.7 448.0,158.4 450.7,150.9 453.3,143.3 456.0,135.6 458.7,127.7 461.3,119.7 464.0,111.6 466.7,103.3 469.3,94.9 472.0,86.4 474.7,77.7 477.3,68.9 480.0,60.0 482.7,50.9 485.3,41.7 488.0,32.4 490.7,22.9 493.3,13.3 496.0,3.6" class="curve"/>
+  <circle cx="200.0" cy="270.0" r="7" class="pt"/>
+  <circle cx="400.0" cy="270.0" r="7" class="pt"/>
+  <text x="196.0" y="254.0" class="lbl">(0.5, 0)</text>
+  <text x="378.0" y="254.0" class="lbl">(3, 0)</text>
+</svg>
+    <div class="see"><b>What you see:</b> a blue U-shaped parabola dips below the x-axis, crossing it twice — once just right of 0 and once near x = 3.</div>
+  </div></div>
+
+  <div class="step"><div class="n">2</div><div>
+    <h3>Tap the zeros</h3>
+    <p>Tap the curve, then tap the two grey points where it crosses the x-axis. Desmos labels them for you — those are your solutions.</p>
+    <div class="ent"><span class="k">(0.5,0)</span><span class="note">First zero, revealed by tapping the curve</span></div>
+    <div class="ent"><span class="k">(3,0)</span><span class="note">Second zero</span></div>
+    <div class="see"><b>What you see:</b> two labelled points sitting exactly where the curve meets the axis.</div>
+  </div></div>
+
+  <div class="step"><div class="n">3</div><div>
+    <h3>Add them in Desmos</h3>
+    <p>Type the sum on a new line. Desmos doubles as a scratchpad, so you never do arithmetic in your head under time pressure.</p>
+    <div class="ent"><span class="k">0.5+3</span><span class="note">= 3.5 — done</span></div>
+    <div class="see"><b>What you see:</b> the row shows 0.5+3 with = 3.5 on the right. That's your answer.</div>
+  </div></div>
+
+  <div class="answer">
+    <div class="lbl">Answer</div>
+    <div class="big">3.5 &nbsp;<span style="font-size:18px;color:var(--muted);font-weight:600">(or 7/2)</span></div>
+    <p style="margin-top:8px">The zeros are x = 0.5 and x = 3, so their sum is 3.5.</p>
+  </div>
+
+  <div class="trap">
+    <div class="lbl">⚠ Common trap</div>
+    <p style="margin-top:6px">Picking <b>1.5</b> — that's the <b>product</b> of the roots (c/a = 3/2), not the sum. The SAT offers both on purpose.</p>
+  </div>
+
+  <div class="card">
+    <div class="lbl">The algebra way, if you prefer</div>
+    <p style="margin-top:6px">Vieta's formulas: sum of roots = −b/a = 7/2. Faster if you already remember it — about ten seconds. CalcHack tells you when that's true instead of pushing you to the calculator every time.</p>
+  </div>
+
+  <div class="end">
+    <h2>That took one photo</h2>
+    <p>Point your camera at any SAT math question and get this back. Five free every day, no account needed to start.</p>
+    <a class="cta" href="/">Try it on your own question</a>
+  </div>
+
+<footer>
+  <a href="/">CalcHack</a><a href="/example.html">Example walkthrough</a><a href="/desmos-cheatsheet.html">Desmos cheat sheet</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a>
+  <div style="margin-top:10px">CalcHack is an independent study tool. Not affiliated with or endorsed by College Board or Desmos. SAT&reg; is a registered trademark of College Board.</div>
+</footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,3334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<title>CalcHack — SAT Math, the Desmos Way</title>
+<meta name="theme-color" content="#0a0e1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Snap any SAT math question. Get the fastest Desmos walkthrough with a live graph.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237c5cff'/%3E%3Cstop offset='1' stop-color='%232fe6a8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Cpath d='M12 46 Q32 6 52 46' fill='none' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M36 18 L26 34 h8 L30 48 L44 30 h-9 z' fill='%23ffe14d' stroke='none'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+:root{
+  --bg:#0a0e1a; --bg2:#0d1322; --card:#141a2e; --card2:#1b2340; --line:#232c4d;
+  --text:#eef1fb; --muted:#8b93b0; --primary:#7c5cff; --primary2:#5b8cff;
+  --accent:#2fe6a8; --danger:#ff6b81; --warn:#ffb020; --gold:#ffe14d;
+  --chip-bg:#0d1222; --chip-border:#2a3560;
+  --nav-bg:rgba(13,18,34,.92); --toast-bg:#20294a; --toast-border:#35408a;
+  --r:18px; --shadow:0 10px 30px rgba(0,0,0,.35);
+}
+body[data-theme="light"]{
+  --bg:#f5f7fc; --bg2:#eceff8; --card:#ffffff; --card2:#e9ecf5; --line:#dde2ee;
+  --text:#181d30; --muted:#5d6580; --accent:#0ca678; --gold:#9a7b00;
+  --chip-bg:#f3f0ff; --chip-border:#d9d2f7;
+  --nav-bg:rgba(255,255,255,.92); --toast-bg:#ffffff; --toast-border:#c9cfe2;
+}
+body[data-theme="light"] #app{border-color:#ccd3e6;box-shadow:0 30px 80px rgba(60,70,110,.25)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+/* The app is a fixed frame with ONE scrolling region inside it. Without this
+   the whole document rubber-bands when you flick past the end of a list, which
+   on a phone feels like the page is coming loose. */
+html,body{height:100%;overscroll-behavior:none}
+html{overflow:hidden}
+body{position:fixed;inset:0;overflow:hidden}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif;
+  display:flex;justify-content:center;align-items:stretch;
+}
+#app{
+  width:100%;max-width:480px;height:100%;display:flex;flex-direction:column;
+  background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%);
+  position:relative;overflow:hidden;
+}
+@media(min-width:520px){
+  body{align-items:center;background:radial-gradient(1200px 800px at 70% -10%,#151c38 0%,#05070f 60%)}
+  body[data-theme="light"]{background:#dfe4f0}
+  #app{height:min(880px,94dvh);border-radius:32px;border:1px solid #1c2440;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+}
+/* ---------- header ---------- */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(env(safe-area-inset-top,0px) + 14px) 18px 12px;
+}
+.logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:19px;letter-spacing:-.3px}
+.logo svg{flex:0 0 auto}
+.logo .hack{background:linear-gradient(90deg,var(--primary),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.meter-pill{
+  display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--muted);
+  background:var(--card);border:1px solid var(--line);padding:7px 11px;border-radius:999px;cursor:pointer;
+}
+.meter-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.meter-pill.low .dot{background:var(--warn)}
+.meter-pill.out .dot{background:var(--danger)}
+.meter-pill.pro{color:var(--gold);border-color:#3b3410}
+/* ---------- views ---------- */
+main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 18px 110px;scroll-behavior:smooth;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.view{display:none;animation:fade .25s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+h1{font-size:26px;letter-spacing:-.5px;line-height:1.2}
+h2{font-size:17px;letter-spacing:-.2px}
+.sub{color:var(--muted);font-size:14px;line-height:1.5;margin-top:6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-top:14px}
+/* ---------- home ---------- */
+/* The two wrappers are invisible on phones — display:contents makes their
+   children behave exactly as if the wrappers weren't there. They only become
+   real columns once there's a desktop's worth of room. */
+.home-main,.home-side{display:contents}
+.nav-foot,.side-only{display:none}
+.cov-p{font-size:12.5px;line-height:1.6;color:var(--muted);margin-top:3px}
+.cov-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.cov-tags span{
+  font-size:11px;font-weight:700;color:var(--muted);
+  background:var(--chip-bg);border:1px solid var(--chip-border);
+  padding:5px 9px;border-radius:8px;
+}
+.hero{margin-top:8px}
+.scan-btn{
+  margin-top:18px;width:100%;border:none;cursor:pointer;color:#fff;
+  background:linear-gradient(135deg,var(--primary) 0%,var(--primary2) 100%);
+  border-radius:22px;padding:22px 20px;display:flex;align-items:center;gap:16px;text-align:left;
+  box-shadow:0 12px 34px rgba(124,92,255,.35);transition:transform .12s ease;
+}
+.scan-btn:active{transform:scale(.98)}
+.scan-btn .ic{width:52px;height:52px;border-radius:16px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.scan-btn b{font-size:17.5px;display:block}
+.scan-btn span{font-size:13px;opacity:.85}
+.row2{display:flex;gap:10px;margin-top:10px}
+.btn-soft{
+  flex:1;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer;
+  border-radius:16px;padding:14px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:background .15s;
+}
+.btn-soft:active{background:var(--card2)}
+.meter-bar{height:7px;border-radius:99px;background:var(--card2);overflow:hidden;margin-top:10px}
+.meter-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--primary2));transition:width .4s ease}
+.hiw{display:flex;gap:10px;margin-top:14px}
+.hiw .st{flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px 11px;text-align:center}
+.hiw .st .n{width:24px;height:24px;margin:0 auto 8px;border-radius:50%;background:var(--card2);color:var(--accent);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.hiw .st p{font-size:11.5px;color:var(--muted);line-height:1.4}
+.recent-item{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.recent-item:last-child{border-bottom:none}
+.recent-item .tag{font-size:10.5px;font-weight:800;padding:4px 8px;border-radius:8px;flex:0 0 auto}
+.recent-item .q{font-size:13.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;flex:1}
+.recent-item .d{font-size:11px;color:var(--muted);flex:0 0 auto}
+.tag.desmos{background:rgba(47,230,168,.14);color:var(--accent)}
+.tag.hand{background:rgba(255,176,32,.14);color:var(--warn)}
+.tag.hybrid{background:rgba(124,92,255,.16);color:#a99bff}
+/* ---------- processing ---------- */
+#processing{
+  position:absolute;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(7,10,20,.92);backdrop-filter:blur(8px);text-align:center;padding:30px;
+}
+#processing.on{display:flex}
+.orb{width:86px;height:86px;border-radius:50%;position:relative;margin-bottom:26px;
+  background:conic-gradient(from 0deg,var(--primary),var(--accent),var(--primary));
+  animation:spin 1.6s linear infinite;display:flex;align-items:center;justify-content:center}
+.orb::after{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--bg)}
+.orb svg{position:relative;z-index:2}
+@keyframes spin{to{transform:rotate(360deg)}}
+#proc-msg{font-size:15.5px;font-weight:700;min-height:24px}
+#proc-sub{color:var(--muted);font-size:13px;margin-top:8px}
+#proc-thumb{max-width:130px;max-height:90px;border-radius:12px;border:1px solid var(--line);margin-bottom:20px;object-fit:cover}
+/* ---------- result ---------- */
+.back-row{display:flex;align-items:center;gap:8px;margin-top:6px}
+.back-btn{border:none;background:var(--card);border:1px solid var(--line);color:var(--text);width:38px;height:38px;border-radius:12px;cursor:pointer;font-size:16px}
+.verdict{display:flex;align-items:center;gap:12px;border-radius:var(--r);padding:14px 16px;margin-top:14px;font-size:14px;line-height:1.45}
+.verdict b{display:block;font-size:14.5px}
+.verdict.desmos{background:rgba(47,230,168,.1);border:1px solid rgba(47,230,168,.35)}
+.verdict.hand{background:rgba(255,176,32,.1);border:1px solid rgba(255,176,32,.35)}
+.verdict.hybrid{background:rgba(124,92,255,.12);border:1px solid rgba(124,92,255,.4)}
+.verdict .em{font-size:24px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.chip{font-size:11.5px;font-weight:700;color:var(--muted);background:var(--card);border:1px solid var(--line);padding:6px 11px;border-radius:999px}
+.chip.hl{color:var(--accent);border-color:rgba(47,230,168,.35)}
+.qcard p{font-size:14.5px;line-height:1.55}
+.qcard .lbl, .lbl{font-size:11px;font-weight:800;letter-spacing:1.1px;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+#graph-wrap{margin-top:14px;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#fff;display:none}
+#graph-head{display:flex;align-items:center;justify-content:space-between;background:var(--card);padding:10px 14px;border-bottom:1px solid var(--line)}
+#graph-head span{font-size:12px;font-weight:800;letter-spacing:.8px;color:var(--muted);text-transform:uppercase}
+#graph-step-ind{font-size:12px;font-weight:800;color:var(--accent);text-transform:none;letter-spacing:0}
+#calculator{width:100%;height:300px}
+.graph-fallback{padding:22px;text-align:center;color:#555;font-size:13px;background:#f4f5f9}
+.step{border:1px solid var(--line);background:var(--card);border-radius:var(--r);margin-top:10px;overflow:hidden;transition:border-color .2s}
+.step.active{border-color:var(--primary)}
+.step-head{display:flex;align-items:center;gap:12px;padding:14px 15px;cursor:pointer}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--card2);color:var(--muted);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;transition:.2s}
+.step.active .step-num{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff}
+.step.done .step-num{background:rgba(47,230,168,.15);color:var(--accent)}
+.step-title{font-size:14.5px;font-weight:700;flex:1}
+.step-body{display:none;padding:0 15px 15px;font-size:14px;color:var(--text)}
+.step.active .step-body{display:block}
+.step-inst{color:var(--muted);line-height:1.6;font-size:13.5px}
+.type-chip{
+  display:flex;align-items:center;gap:10px;margin-top:10px;background:var(--chip-bg);border:1px solid var(--chip-border);
+  border-radius:12px;padding:10px 12px;
+}
+.type-chip .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;color:var(--accent);flex:1;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+.type-chip .note{display:block;font-size:11px;color:var(--muted);margin-top:3px;font-family:-apple-system,sans-serif;white-space:normal}
+.copy-btn{border:none;background:var(--card2);color:var(--muted);border-radius:8px;padding:6px 9px;font-size:11px;font-weight:700;cursor:pointer;flex:0 0 auto}
+.copy-btn:active{color:var(--accent)}
+.answer-card{margin-top:14px;border:1px solid rgba(47,230,168,.35);background:rgba(47,230,168,.06);border-radius:var(--r);padding:16px;cursor:pointer}
+.answer-card .val{font-size:24px;font-weight:800;color:var(--accent);margin-top:6px;filter:blur(10px);transition:filter .3s;user-select:none}
+.answer-card.revealed .val{filter:none;user-select:auto}
+.answer-card .exp{font-size:13.5px;color:var(--muted);line-height:1.55;margin-top:8px;display:none}
+.answer-card.revealed .exp{display:block}
+.answer-card .hint{font-size:11.5px;color:var(--muted);margin-top:8px}
+.trap-card{border-color:rgba(255,107,129,.3);background:rgba(255,107,129,.05)}
+.trap-card p{font-size:13.5px;color:var(--muted);line-height:1.55;margin-top:6px}
+.trap-card .lbl{color:var(--danger)}
+.hand-card p{font-size:13.5px;color:var(--muted);line-height:1.55;margin-top:6px}
+.big-cta{
+  width:100%;margin-top:16px;border:none;cursor:pointer;color:#fff;font-size:15px;font-weight:800;
+  background:linear-gradient(135deg,var(--primary),var(--primary2));border-radius:16px;padding:16px;
+}
+/* ---------- paywall ---------- */
+.pw-hero{
+  margin-top:10px;border-radius:24px;padding:26px 20px;text-align:center;position:relative;overflow:hidden;
+  background:linear-gradient(140deg,#241a54 0%,#132a4d 55%,#0c3d3f 100%);border:1px solid #34306b;
+}
+.pw-hero{color:#eef1fb}
+.pw-hero .sub{color:#a9b2d8}
+.pw-hero h1{font-size:24px}
+.pw-hero .crown{font-size:40px;margin-bottom:8px}
+.pw-feats{margin-top:16px}
+.pw-feat{display:flex;gap:12px;align-items:flex-start;padding:11px 4px;font-size:14px}
+.pw-feat .ck{color:var(--accent);font-weight:900;flex:0 0 auto}
+.pw-feat span b{display:block;font-size:14px}
+.pw-feat span i{font-style:normal;color:var(--muted);font-size:12.5px}
+.plans{display:flex;gap:9px;margin-top:20px}
+@media(max-width:379px){.plans{flex-direction:column;gap:12px}}
+.plan{flex:1;border:1.5px solid var(--line);background:var(--card);border-radius:18px;padding:16px 13px;cursor:pointer;position:relative;text-align:center;transition:border-color .15s}
+.plan.sel{border-color:var(--accent);background:rgba(47,230,168,.06)}
+.plan .badge{position:absolute;top:-9px;left:50%;transform:translateX(-50%);font-size:8.5px;font-weight:900;background:var(--accent);color:#05261a;padding:4px 7px;border-radius:99px;white-space:nowrap;letter-spacing:.3px}
+.plan .nm{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.plan .pr{font-size:21px;font-weight:800;margin-top:7px;letter-spacing:-.5px}
+.plan .per{font-size:10.5px;color:var(--muted);margin-top:4px;line-height:1.35}
+.fine{font-size:11px;color:var(--muted);text-align:center;line-height:1.6;margin-top:12px}
+/* ---------- settings ---------- */
+.field{margin-top:14px}
+.field label{display:block;font-size:12.5px;font-weight:800;color:var(--muted);margin-bottom:7px}
+.field input,.field select{
+  width:100%;background:var(--card);border:1px solid var(--line);color:var(--text);
+  border-radius:13px;padding:13px 14px;font-size:14px;outline:none;font-family:inherit;
+}
+.field input:focus,.field select:focus{border-color:var(--primary)}
+.field .hintt{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5}
+.field .hintt a{color:var(--primary2);text-decoration:none}
+.inline-btn{border:none;background:var(--card2);color:var(--text);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;margin-right:8px}
+.danger-btn{color:var(--danger)}
+.disclaim{font-size:10.5px;color:#5a6280;line-height:1.6;margin-top:20px;text-align:center;padding-bottom:10px}
+/* ---------- bottom nav ---------- */
+nav{
+  position:absolute;bottom:0;left:0;right:0;z-index:50;display:flex;
+  background:var(--nav-bg);backdrop-filter:blur(14px);border-top:1px solid var(--line);
+  padding:8px 6px calc(env(safe-area-inset-bottom,0px) + 10px);
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px);
+}
+nav button{flex:1;border:none;background:none;color:var(--muted);cursor:pointer;font-size:10.5px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 0}
+nav button.on{color:var(--accent)}
+nav button svg{opacity:.85}
+nav button .pro-star{color:var(--gold)}
+/* ---------- overlays ---------- */
+#toast{
+  position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);z-index:120;
+  background:var(--toast-bg);border:1px solid var(--toast-border);color:var(--text);font-size:13.5px;font-weight:600;
+  padding:12px 18px;border-radius:14px;opacity:0;pointer-events:none;transition:.3s;max-width:85%;text-align:center;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);
+}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+#onboard{
+  position:absolute;inset:0;z-index:90;background:var(--bg);display:none;flex-direction:column;
+  padding:calc(env(safe-area-inset-top,0px) + 30px) 28px calc(env(safe-area-inset-bottom,0px) + 26px);
+}
+#onboard.on{display:flex}
+.ob-art{flex:1;display:flex;align-items:center;justify-content:center;font-size:88px}
+.ob-title{font-size:27px;font-weight:800;letter-spacing:-.5px;text-align:center;line-height:1.25}
+.ob-sub{color:var(--muted);font-size:14.5px;text-align:center;line-height:1.6;margin-top:12px;min-height:70px}
+.ob-dots{display:flex;gap:7px;justify-content:center;margin:18px 0}
+.ob-dots i{width:7px;height:7px;border-radius:50%;background:var(--card2);transition:.3s}
+.ob-dots i.on{background:var(--accent);width:22px;border-radius:99px}
+.ob-skip{position:absolute;top:calc(env(safe-area-inset-top,0px) + 18px);right:22px;background:none;border:none;color:var(--muted);font-size:13.5px;font-weight:700;cursor:pointer}
+/* ---------- auth gate ---------- */
+#auth{
+  position:absolute;inset:0;z-index:88;display:none;flex-direction:column;
+  background:radial-gradient(900px 500px at 50% -20%,#1c1650 0%,var(--bg) 55%);
+  padding:calc(env(safe-area-inset-top,0px) + 30px) 26px calc(env(safe-area-inset-bottom,0px) + 26px);
+}
+#auth.on{display:flex}
+.auth-top{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.auth-top h1{font-size:28px;margin-top:18px}
+.auth-top .sub{max-width:280px}
+.btn-google{
+  width:100%;background:#fff;color:#1f1f1f;border:none;border-radius:16px;padding:15px;margin-top:10px;
+  font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;font-family:inherit;
+}
+.btn-guest{width:100%;background:none;border:none;color:var(--muted);font-size:14px;font-weight:700;margin-top:16px;cursor:pointer;font-family:inherit;padding:8px}
+.auth-fine{font-size:10.5px;color:#5a6280;text-align:center;line-height:1.6;margin-top:14px}
+/* ---------- per-step Desmos preview ---------- */
+.dz-lbl{margin-top:14px;font-size:10.5px;font-weight:800;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+.dz-window{display:flex;border:1px solid #cfd3dd;border-radius:12px;overflow:hidden;background:#fff;margin-top:7px;min-height:150px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.dz-panel{width:46%;min-width:132px;border-right:1px solid #e3e5ea;background:#fff;display:flex;flex-direction:column}
+.dz-panel-head{background:#f6f7f9;border-bottom:1px solid #e3e5ea;padding:5px 9px;font-size:9px;font-weight:800;letter-spacing:.8px;color:#8a90a0;text-transform:uppercase}
+.dz-row{display:flex;align-items:center;gap:7px;padding:8px 8px;border-bottom:1px solid #eef0f4;color:#1a1a1a}
+.dz-row.new{background:#fbf7ff;box-shadow:inset 3px 0 0 var(--primary)}
+.dz-idx{font-size:10px;color:#a2a7b4;min-width:11px;text-align:center;flex:0 0 auto}
+.dz-ic{flex:0 0 auto;display:flex;align-items:center}
+.dz-ex{font-size:12px;overflow-x:auto;white-space:nowrap;scrollbar-width:none;flex:1}
+.dz-ex .katex{font-size:1em}
+.dz-graph{flex:1;position:relative;background:#fff;display:flex;align-items:center;justify-content:center;min-height:150px}
+.dz-graph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.shot-loading{font-size:11px;color:#9aa0ad;padding:10px;text-align:center}
+.shot-loading .sp{display:inline-block;width:12px;height:12px;border:2px solid #d8dbe3;border-top-color:#7c5cff;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:6px}
+.see-note{margin-top:9px;font-size:13px;color:var(--text);line-height:1.55;background:rgba(47,230,168,.07);border:1px solid rgba(47,230,168,.25);border-radius:12px;padding:10px 12px;display:flex;gap:8px}
+.see-note .eye{flex:0 0 auto}
+/* ---------- bottom sheet ---------- */
+#sheet{position:absolute;inset:0;z-index:100;display:none;align-items:flex-end;background:rgba(5,8,16,.6);backdrop-filter:blur(4px)}
+#sheet.on{display:flex}
+.sheet-card{width:100%;overscroll-behavior:contain;background:var(--bg);border-radius:26px 26px 0 0;border-top:1px solid var(--line);padding:8px 20px calc(env(safe-area-inset-bottom,0px) + 22px);animation:up .28s ease;max-height:85%;overflow-y:auto}
+@keyframes up{from{transform:translateY(50px);opacity:0}}
+@keyframes sheet-in{from{transform:scale(.96);opacity:0}}
+.sheet-grab{width:42px;height:5px;border-radius:99px;background:var(--card2);margin:8px auto 16px}
+.sheet-title{font-size:19px;font-weight:800;letter-spacing:-.3px}
+.sheet-sub{color:var(--muted);font-size:13.5px;line-height:1.55;margin-top:7px}
+.sheet-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+.sheet-row:last-of-type{border-bottom:none}
+.sheet-row .k{color:var(--muted)}
+.sheet-row .v{font-weight:700}
+.big-cta.danger{background:linear-gradient(135deg,#e5484d,#ff6b81)}
+.big-cta.ghost{background:var(--card);border:1px solid var(--line);color:var(--text)}
+.big-cta:disabled{opacity:.6}
+.success-pop{text-align:center;padding:22px 0 8px}
+.success-pop .ck{width:74px;height:74px;margin:0 auto 16px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--primary2));display:flex;align-items:center;justify-content:center;font-size:34px;color:#fff;animation:pop .45s ease}
+@keyframes pop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1)}}
+/* ---------- toggle switch / setting rows ---------- */
+.setrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0}
+.setrow + .setrow{border-top:1px solid var(--line)}
+.setrow .sr-txt b{display:block;font-size:14px}
+.setrow .sr-txt i{font-style:normal;color:var(--muted);font-size:12px;line-height:1.45;display:block;margin-top:2px}
+.switch{position:relative;width:46px;height:27px;flex:0 0 auto}
+.switch input{display:none}
+.switch .tr{position:absolute;inset:0;border-radius:99px;background:var(--card2);transition:.2s;cursor:pointer;display:block}
+.switch .tr::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.switch input:checked + .tr{background:var(--accent)}
+.switch input:checked + .tr::after{left:22px}
+/* ---------- history actions / account ---------- */
+.ri-actions{display:flex;gap:6px;flex:0 0 auto}
+.ri-btn{border:none;background:var(--card2);color:var(--muted);width:30px;height:30px;border-radius:9px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:.15s}
+.ri-btn.pinned{color:var(--gold);background:rgba(255,225,77,.12)}
+.card-head-row{display:flex;justify-content:space-between;align-items:center}
+.card-head-row .inline-btn{margin-top:0}
+.avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;font-weight:800;font-size:19px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.acct-row{display:flex;align-items:center;gap:13px;margin-top:6px}
+.acct-row .nm{font-size:15.5px;font-weight:800}
+.acct-row .em{font-size:12.5px;color:var(--muted);margin-top:2px}
+.status-pill{display:inline-block;font-size:11px;font-weight:800;padding:4px 10px;border-radius:99px;margin-top:8px}
+.status-pill.ok{background:rgba(47,230,168,.13);color:var(--accent)}
+.status-pill.off{background:rgba(255,176,32,.13);color:var(--warn)}
+
+.renew-box{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:13px 15px;margin-top:16px;
+}
+.renew-box b{display:block;font-size:13.5px;color:var(--text);line-height:1.5}
+.renew-box span{display:block;font-size:12px;color:var(--muted);line-height:1.55;margin-top:6px}
+.age-note{
+  font-size:11.5px;color:var(--muted);line-height:1.55;margin-top:12px;text-align:center;
+}
+.age-note a{color:var(--muted);text-decoration:underline}
+.ios-steps{margin-top:14px;display:flex;flex-direction:column;gap:11px}
+.ios-steps div{display:flex;gap:11px;align-items:flex-start}
+.ios-steps b{
+  flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--card2);color:var(--accent);
+  font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px;
+}
+.ios-steps span{font-size:13.5px;color:var(--muted);line-height:1.5}
+.ios-steps span b{display:inline;width:auto;height:auto;background:none;color:var(--text);font-size:inherit}
+.tp-practice{
+  display:block;margin-top:13px;font-size:12.5px;font-weight:700;color:var(--accent);
+  text-decoration:none;
+}
+.tp-lede{font-size:12.5px;line-height:1.6;color:var(--muted);margin-top:3px}
+.tp-lede b{color:var(--text);font-weight:700}
+.tp-list{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.tp-row{display:flex;align-items:center;gap:10px;font-size:12.5px}
+.tp-name{flex:0 0 40%;color:var(--text);font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tp-bar{flex:1;height:6px;border-radius:99px;background:var(--card2);overflow:hidden}
+.tp-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--primary),var(--accent))}
+.tp-n{flex:0 0 auto;color:var(--muted);font-weight:700;min-width:14px;text-align:right}
+#scan-error{
+  background:rgba(255,107,129,.07);border:1px solid rgba(255,107,129,.35);
+  border-radius:var(--r);padding:16px;margin-top:14px;display:none;
+}
+#scan-error.on{display:block}
+#scan-error .et{font-size:15px;font-weight:800;color:var(--danger)}
+#scan-error .eb{font-size:13.5px;color:var(--muted);line-height:1.55;margin-top:6px}
+#scan-error .row2{margin-top:12px}
+.report-hint{
+  margin-top:12px;font-size:12px;color:var(--muted);text-align:center;line-height:1.5;
+}
+.report-hint b{color:var(--accent);font-weight:700;cursor:pointer}
+.rep-opts{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.rep-opt{
+  border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer;font-family:inherit;
+  border-radius:14px;padding:13px 15px;text-align:left;font-size:14px;font-weight:700;transition:background .14s;
+}
+.rep-opt:active,.rep-opt.on{background:var(--card2);border-color:var(--primary)}
+.rep-opt i{display:block;font-style:normal;font-size:12px;font-weight:500;color:var(--muted);margin-top:3px}
+/* ---------- share ---------- */
+.result-actions{display:flex;gap:10px;margin-top:16px}
+.result-actions .big-cta{margin-top:0}
+.btn-share{
+  flex:0 0 auto;width:58px;border:1px solid var(--line);background:var(--card);color:var(--text);
+  border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.btn-share:active{background:var(--card2)}
+.btn-share:disabled{opacity:.5}
+
+/* ================= DESKTOP ( >= 900px ) =================
+   Full-bleed application shell: title bar across the top, persistent rail on
+   the left, one scrolling work area. Nothing below 900px is touched. */
+@media (min-width:900px){
+  body{align-items:stretch;justify-content:stretch;background:var(--bg)}
+  #app{
+    width:100%;max-width:none;height:100%;
+    border:none;border-radius:0;box-shadow:none;
+    background:var(--bg);
+    display:grid;
+    grid-template-columns:262px minmax(0,1fr);
+    grid-template-rows:auto minmax(0,1fr);
+    grid-template-areas:"header header" "nav main";
+  }
+  body[data-theme="light"] #app{border:none;box-shadow:none}
+
+  /* ---------- title bar ---------- */
+  header{
+    grid-area:header;height:68px;padding:0 30px;
+    border-bottom:1px solid var(--line);background:var(--bg2);
+  }
+  .logo{font-size:20px;gap:11px}
+  .logo svg{width:28px;height:28px}
+  .meter-pill{font-size:13px;padding:8px 14px;transition:border-color .15s,background .15s}
+  .meter-pill:hover{border-color:var(--primary);background:var(--card2)}
+
+  /* ---------- left rail ---------- */
+  nav{
+    grid-area:nav;position:static;z-index:auto;
+    flex-direction:column;align-items:stretch;gap:3px;
+    padding:18px 14px 16px;
+    border-top:none;border-right:1px solid var(--line);
+    background:var(--bg2);backdrop-filter:none;
+  }
+  nav button{
+    flex:0 0 auto;flex-direction:row;justify-content:flex-start;gap:13px;
+    font-size:14.5px;padding:11px 13px;border-radius:12px;
+    transition:background .14s ease,color .14s ease;
+  }
+  nav button:hover{background:var(--card);color:var(--text)}
+  nav button.on{background:var(--card);color:var(--accent)}
+  nav button svg{width:19px;height:19px;opacity:1}
+
+  .nav-foot{display:block;margin-top:auto;padding:16px 10px 2px;border-top:1px solid var(--line)}
+  .nav-foot .nf{
+    display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;
+    font-size:11.5px;line-height:1.5;font-weight:600;color:var(--muted);
+  }
+  .nav-foot .nf b{color:var(--text);font-weight:700}
+  .nav-foot .nf svg{flex:0 0 auto;margin-top:2px;color:var(--accent)}
+  .nav-foot .nf-legal{font-size:10.5px;line-height:1.7;color:var(--muted);opacity:.62;margin-top:12px}
+  .nav-foot .nf-legal a{color:var(--muted);font-weight:700;text-decoration:none}
+  .nav-foot .nf-legal a:hover{color:var(--accent)}
+
+  /* ---------- the bottom sheet becomes a centred dialog ----------
+     A sheet pinned to the bottom edge and stretched across a monitor reads
+     like a broken page. On desktop it's a modal, which is what someone about
+     to type a password or a card expects to see. */
+  #sheet{align-items:center;justify-content:center;padding:40px}
+  .sheet-card{
+    width:min(440px,100%);
+    border-radius:24px;border:1px solid var(--line);border-top:1px solid var(--line);
+    padding:26px 28px 28px;max-height:min(740px,86vh);
+    box-shadow:0 30px 90px rgba(0,0,0,.55);
+    animation:sheet-in .2s cubic-bezier(.2,.9,.3,1);
+  }
+  body[data-theme="light"] .sheet-card{box-shadow:0 30px 90px rgba(60,70,110,.28)}
+  .sheet-grab{display:none}          /* a drag handle means nothing with a mouse */
+  .sheet-title{font-size:20px}
+  .sheet-sub{font-size:14px}
+
+  /* ---------- welcome + onboarding become centred cards ----------
+     On a phone these are full-height sheets. Stretched across a monitor the
+     buttons run a metre wide and it reads like a broken web page, so the
+     column gets pinned to a readable width in the middle. */
+  #onboard,#auth{align-items:center;justify-content:center;padding:48px 40px}
+  #onboard>*,#auth>*{width:100%;max-width:420px;flex:0 0 auto}
+  .ob-art{min-height:170px;font-size:96px}
+  .ob-sub{min-height:0;margin-bottom:6px}
+  .ob-skip{top:24px;right:32px}
+  .auth-top{margin-bottom:30px}
+  .auth-top h1{font-size:31px}
+  #auth{background:radial-gradient(1000px 620px at 50% 0%,#1c1650 0%,var(--bg) 62%)}
+  .auth-fine{max-width:420px}
+
+  /* ---------- work area ---------- */
+  main{grid-area:main;padding:30px 40px 56px}
+  .view{max-width:1380px;margin:0 auto}
+  #toast{bottom:34px}
+  #processing{border-radius:0}
+
+  /* ---------- home: task column + context rail ---------- */
+  .home-main{display:flex;flex-direction:column}
+  .home-side{display:block}
+  .side-only{display:block}
+  #view-home.active{
+    display:grid;grid-template-columns:minmax(0,1fr) 340px;
+    column-gap:34px;align-items:stretch;max-width:1240px;
+    /* fill the window rather than leaving a lake of empty pixels below */
+    min-height:calc(100dvh - 68px - 86px);
+  }
+  .home-side>*+*{margin-top:14px}
+  .hero{margin-top:2px;flex:0 0 auto}
+  .hero h1{font-size:36px;letter-spacing:-.9px}
+  .hero .sub{max-width:56ch;font-size:15px}
+
+  /* the scan button becomes the room's centrepiece: a real drop target that
+     grows to take whatever height is going spare */
+  .scan-btn{
+    flex:1 1 auto;min-height:230px;max-height:min(460px,46vh);
+    flex-direction:column;justify-content:center;text-align:center;gap:18px;
+    padding:34px;border-radius:24px;
+    /* a slab of solid gradient this tall is overbearing — on desktop it reads
+       as a drop target instead, with the gradient saved for the icon */
+    background:linear-gradient(165deg,rgba(124,92,255,.15) 0%,rgba(91,140,255,.06) 100%);
+    border:1.5px dashed var(--chip-border);color:var(--text);
+    box-shadow:none;transition:border-color .16s ease,background .16s ease;
+  }
+  .scan-btn:hover{border-color:var(--primary);background:linear-gradient(165deg,rgba(124,92,255,.22) 0%,rgba(91,140,255,.1) 100%)}
+  .scan-btn:active{transform:none}
+  .scan-btn .ic{
+    width:72px;height:72px;border-radius:22px;
+    background:linear-gradient(135deg,var(--primary) 0%,var(--primary2) 100%);
+    box-shadow:0 12px 30px rgba(124,92,255,.38);
+  }
+  .scan-btn .ic svg{width:32px;height:32px}
+  .scan-btn b{font-size:21px;margin-bottom:5px}
+  .scan-btn span{font-size:14px;color:var(--muted);opacity:1}
+  .row2,#usage-card,#acct-banner{flex:0 0 auto}
+  .btn-soft{padding:15px;font-size:14.5px}
+  .btn-soft:hover{background:var(--card2)}
+  .row2{gap:12px}
+
+  /* the three steps read better stacked in a rail than squeezed side by side */
+  .hiw{
+    flex-direction:column;gap:0;margin-top:0;overflow:hidden;
+    background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  }
+  .hiw .st{
+    border:none;border-radius:0;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:12px;padding:15px 16px;text-align:left;
+  }
+  .hiw .st:last-child{border-bottom:none}
+  .hiw .st .n{margin:0;flex:0 0 auto}
+  .hiw .st p{font-size:13px;text-align:left}
+
+  /* ---------- result: reading column, graph parked alongside ---------- */
+  #view-result.active{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 460px;
+    grid-template-areas:"head graph" "body graph" "steps graph" "ans graph" "act graph";
+    column-gap:32px;align-items:start;max-width:1400px;
+  }
+  #view-result .back-row{grid-area:head}
+  #view-result #result-body{grid-area:body}
+  #view-result #graph-anchor{grid-area:graph;position:sticky;top:0}
+  #view-result #steps-anchor{grid-area:steps}
+  #view-result #answer-anchor{grid-area:ans}
+  #view-result .result-actions{grid-area:act}
+  #calculator{height:430px}
+  .dz-window{max-width:560px}
+
+  #view-settings,#view-history,#view-paywall{max-width:820px}
+  .plans{max-width:660px;margin-left:auto;margin-right:auto}
+}
+
+/* ---- wider screens: give the graph and the reading column more room ---- */
+@media (min-width:1500px){
+  #app{grid-template-columns:288px minmax(0,1fr)}
+  main{padding:38px 56px 64px}
+  #view-home.active{
+    grid-template-columns:minmax(0,1fr) 380px;column-gap:46px;max-width:1360px;
+    min-height:calc(100dvh - 68px - 102px);   /* main's padding grew at this size */
+  }
+  #view-result.active{grid-template-columns:minmax(0,1fr) 540px;column-gap:40px}
+  #calculator{height:480px}
+  .hero h1{font-size:38px}
+  .hero .sub{font-size:15.5px}
+}
+
+/* drag a screenshot anywhere on the window */
+#drop-veil{
+  position:absolute;inset:0;z-index:95;display:none;align-items:center;justify-content:center;
+  background:rgba(8,11,22,.82);backdrop-filter:blur(3px);
+}
+body.dragging #drop-veil{display:flex}
+#drop-veil .box{
+  border:2px dashed var(--accent);border-radius:22px;padding:44px 56px;text-align:center;
+  background:rgba(47,230,168,.06);
+}
+#drop-veil .box b{display:block;font-size:19px;letter-spacing:-.2px}
+#drop-veil .box span{display:block;font-size:13.5px;color:var(--muted);margin-top:6px}
+/* katex sizing */
+.katex{font-size:1.03em}
+::-webkit-scrollbar{display:none}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ ONBOARDING ============ -->
+  <div id="onboard">
+    <button class="ob-skip" onclick="App.finishOnboard()">Skip</button>
+    <div class="ob-art" id="ob-art">📸</div>
+    <div class="ob-title" id="ob-title">Snap any SAT math question</div>
+    <div class="ob-sub" id="ob-sub">Take a photo or upload a screenshot of any question from a practice test, Bluebook, or your homework.</div>
+    <div class="ob-dots"><i class="on"></i><i></i><i></i></div>
+    <button class="big-cta" id="ob-next" onclick="App.obNext()">Next</button>
+  </div>
+
+  <!-- ============ AUTH GATE ============ -->
+  <div id="auth">
+    <div class="auth-top">
+      <svg width="76" height="76" viewBox="0 0 64 64"><defs><linearGradient id="ag" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#2fe6a8"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="url(#ag)"/><path d="M12 46 Q32 6 52 46" fill="none" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M36 18 L26 34 h8 L30 48 L44 30 h-9 z" fill="#ffe14d"/></svg>
+      <h1>Welcome to Calc<span style="background:linear-gradient(90deg,var(--primary),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent">Hack</span></h1>
+      <p class="sub">An account keeps your scans and your membership on every device you use.</p>
+    </div>
+    <button class="big-cta" onclick="App.authOn() ? App.openAuthSheet('up') : App.openAccountSheet('signup')">Create free account</button>
+    <button class="btn-google" onclick="App.authOn() ? App.signInGoogle() : App.openGoogleSheet()">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Continue with Google
+    </button>
+    <button class="btn-guest" onclick="App.chooseGuest()">Continue as guest</button>
+    <p class="auth-fine">Guests get the same free scans — an account is only required to buy a Pro membership. You can sign up anytime in Settings.</p>
+  </div>
+
+  <!-- ============ HEADER ============ -->
+  <header>
+    <div class="logo">
+      <svg width="26" height="26" viewBox="0 0 64 64"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#2fe6a8"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="url(#lg)"/><path d="M12 46 Q32 6 52 46" fill="none" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M36 18 L26 34 h8 L30 48 L44 30 h-9 z" fill="#ffe14d"/></svg>
+      <span>Calc<span class="hack">Hack</span></span>
+    </div>
+    <div class="meter-pill" id="meter-pill" onclick="App.nav('paywall')">
+      <span class="dot"></span><span id="meter-text">5 scans left</span>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- ============ HOME ============ -->
+    <section class="view active" id="view-home">
+      <div class="home-main">
+      <div class="hero">
+        <h1>Stuck on a question?</h1>
+        <p class="sub">Snap it. CalcHack finds the <b>fastest way to solve it in Desmos</b> — or tells you when doing it by hand is quicker.</p>
+        <div class="chips" id="home-chips" style="display:none"></div>
+      </div>
+
+      <div id="scan-error">
+        <div class="et" id="err-title">That didn't work</div>
+        <div class="eb" id="err-body"></div>
+        <div class="row2">
+          <button class="btn-soft" id="err-retry" onclick="App.retryLastScan()">Try again</button>
+          <button class="btn-soft" id="err-wait" style="display:none" onclick="App.offerWaitlist()">Email me when it's back</button>
+          <button class="btn-soft" onclick="App.clearScanError()">Dismiss</button>
+        </div>
+      </div>
+
+      <button class="scan-btn" id="scan-cta" onclick="App.primaryScan()">
+        <span class="ic">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </span>
+        <span><b id="scan-title">Scan a question</b><span id="scan-sub">Point your camera at any SAT math problem</span></span>
+      </button>
+
+      <div class="row2">
+        <button class="btn-soft" id="upload-btn" onclick="App.openUpload()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Upload photo
+        </button>
+        <button class="btn-soft" onclick="App.runSample()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Try a sample
+        </button>
+      </div>
+
+      <div class="card" id="usage-card">
+        <div class="lbl">Free plan</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span style="font-size:14px;font-weight:700" id="usage-line">5 of 5 free scans left today</span>
+          <a style="font-size:12.5px;font-weight:800;color:var(--accent);cursor:pointer" onclick="App.nav('paywall')">Go Pro →</a>
+        </div>
+        <div class="meter-bar"><i id="usage-fill" style="width:100%"></i></div>
+      </div>
+
+      <div class="card" id="acct-banner" style="display:none">
+        <div class="lbl">Account</div>
+        <p style="font-size:13.5px;line-height:1.55;margin-top:2px">Make a free account so your scans follow you between your phone and laptop — and so a Pro membership stays attached to you, not to one browser.</p>
+        <div class="row2" style="margin-top:12px">
+          <button class="btn-soft" onclick="App.authOn() ? App.openAuthSheet('up') : App.openAccountSheet('signup')">Create account</button>
+          <button class="btn-soft" onclick="App.dismissBanner()">Not now</button>
+        </div>
+      </div>
+      </div><!-- /home-main -->
+
+      <div class="home-side">
+      <div class="hiw">
+        <div class="st"><div class="n">1</div><p><b>Snap</b> the question with your camera</p></div>
+        <div class="st"><div class="n">2</div><p><b>Get</b> the fastest Desmos strategy</p></div>
+        <div class="st"><div class="n">3</div><p><b>Watch</b> it solved on a live graph</p></div>
+      </div>
+
+      <div class="card" id="recent-card" style="display:none">
+        <div class="lbl">Recent scans</div>
+        <div id="recent-list"></div>
+      </div>
+
+      <div class="card" id="install-card" style="display:none">
+        <div class="lbl">Tip</div>
+        <p style="font-size:13.5px;line-height:1.55;margin-top:2px">Put CalcHack on your home screen and it opens like a real app — full screen, one tap, no hunting for the tab.</p>
+        <div class="row2" style="margin-top:12px">
+          <button class="btn-soft" onclick="App.doInstall()">Add to home screen</button>
+          <button class="btn-soft" onclick="App.dismissInstall()">Not now</button>
+        </div>
+      </div>
+
+      <div class="card" id="topics-card" style="display:none"></div>
+
+      <!-- desktop rail only: says what the thing actually covers -->
+      <div class="card side-only">
+        <div class="lbl">Built for the digital SAT</div>
+        <p class="cov-p">Answers come back as the exact keystrokes for the Desmos calculator built into Bluebook — plus a live graph so you can see it work.</p>
+        <div class="cov-tags">
+          <span>Linear systems</span><span>Quadratics</span><span>Circles &amp; conics</span><span>Exponentials</span><span>Trig</span><span>Statistics</span><span>Word problems</span>
+        </div>
+        <p class="cov-p" style="margin-top:13px">
+          <a href="desmos-cheatsheet.html" style="color:var(--accent);font-weight:700">Desmos cheat sheet &rarr;</a><br>
+          <a href="example.html" style="color:var(--accent);font-weight:700">See a worked example &rarr;</a>
+        </p>
+      </div>
+      </div><!-- /home-side -->
+
+      <input type="file" id="file-cam" accept="image/*" capture="environment" hidden>
+      <input type="file" id="file-up" accept="image/*" hidden>
+    </section>
+
+    <!-- ============ RESULT ============ -->
+    <section class="view" id="view-result">
+      <div class="back-row">
+        <button class="back-btn" onclick="App.nav('home')">←</button>
+        <h2>Walkthrough</h2>
+      </div>
+      <div id="result-body"></div>
+      <div id="graph-anchor"></div>
+      <div id="steps-anchor"></div>
+      <div id="answer-anchor"></div>
+      <p class="report-hint">Answer look wrong? <b onclick="App.openReport()">Tell me about it</b> — it's how this gets better.</p>
+
+      <div class="result-actions">
+        <button class="big-cta" onclick="App.nav('home')">Scan another question</button>
+        <button class="btn-share" id="share-btn" onclick="App.shareResult()" title="Share this walkthrough" aria-label="Share this walkthrough">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        </button>
+        <button class="btn-share" id="report-btn" onclick="App.openReport()" title="Report a problem with this answer" aria-label="Report a problem with this answer">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- ============ HISTORY ============ -->
+    <section class="view" id="view-history">
+      <h1 style="margin-top:8px">History</h1>
+      <p class="sub">Every question you scan is saved here. Pin the tricky ones to review before test day.</p>
+      <div class="field" style="margin-top:12px">
+        <input type="search" id="hist-search" placeholder="Search topics or questions…" oninput="App.renderHistory()" autocomplete="off">
+      </div>
+      <div class="card">
+        <div class="card-head-row">
+          <div class="lbl" style="margin-bottom:0">Saved scans</div>
+          <button class="inline-btn danger-btn" id="hist-clear-btn" onclick="App.confirmClearHistory()" style="display:none">Clear all</button>
+        </div>
+        <div id="history-list" style="margin-top:8px"><p class="sub" style="margin:0">No scans yet. Your solved questions will appear here.</p></div>
+      </div>
+    </section>
+
+    <!-- ============ PAYWALL ============ -->
+    <section class="view" id="view-paywall">
+      <div class="pw-hero">
+        <div class="crown">👑</div>
+        <h1>CalcHack <span style="color:var(--gold)">Pro</span></h1>
+        <p class="sub" style="margin-top:8px">Unlimited scans. Every strategy. Test-day ready.</p>
+      </div>
+      <div class="pw-feats card">
+        <div class="pw-feat"><span class="ck">✓</span><span><b>Unlimited question scans</b><i>Free plan includes 5 scans per day</i></span></div>
+        <div class="pw-feat"><span class="ck">✓</span><span><b>Live interactive Desmos graphs</b><i>Tap through each step on a real calculator</i></span></div>
+        <div class="pw-feat"><span class="ck">✓</span><span><b>"Fastest method" verdicts</b><i>Know instantly when Desmos beats algebra</i></span></div>
+        <div class="pw-feat"><span class="ck">✓</span><span><b>Full scan history</b><i>Build a personal review bank before test day</i></span></div>
+      </div>
+      <div class="plans">
+        <div class="plan" id="plan-m" onclick="App.selPlan('m')">
+          <div class="nm">Monthly</div><div class="pr">$6.99</div><div class="per">per month</div>
+        </div>
+        <div class="plan sel" id="plan-q" onclick="App.selPlan('q')">
+          <div class="badge">BEST FOR TEST DAY</div>
+          <div class="nm">3 months</div><div class="pr">$14.99</div><div class="per">$5.00/mo · a full prep cycle</div>
+        </div>
+        <div class="plan" id="plan-y" onclick="App.selPlan('y')">
+          <div class="nm">Annual</div><div class="pr">$39.99</div><div class="per">$3.33/mo · a full school year</div>
+        </div>
+      </div>
+      <div class="renew-box" id="renew-box">
+        <b id="renew-line">$14.99 billed today, then $14.99 every 3 months until you cancel.</b>
+        <span>Cancel any time in Settings &rarr; Manage or cancel; it takes two clicks and you keep Pro until the period you paid for ends. Full refund within 14 days, no questions asked.</span>
+      </div>
+      <button class="big-cta" id="pw-cta" onclick="App.openPurchase()">Start Pro — $14.99 for 3 months</button>
+      <p class="fine" id="pw-fine">Secure checkout by Stripe · Apple Pay supported<br>Score improvement not guaranteed · <a href="terms.html" style="color:var(--muted);text-decoration:underline">Terms</a> · <a href="privacy.html" style="color:var(--muted);text-decoration:underline">Privacy</a></p>
+    </section>
+
+    <!-- ============ SETTINGS ============ -->
+    <section class="view" id="view-settings">
+      <h1 style="margin-top:8px">Settings</h1>
+
+      <div class="card" id="acct-card"></div>
+      <div class="card" id="sub-card" style="display:none"></div>
+
+      <div class="card">
+        <div class="lbl">Appearance</div>
+        <div class="field">
+          <label>Theme</label>
+          <select id="set-theme" onchange="App.themeChanged()">
+            <option value="dark">Dark (default)</option>
+            <option value="light">Light</option>
+            <option value="auto">Match system</option>
+          </select>
+        </div>
+        <div class="setrow">
+          <span class="sr-txt"><b>Hide the answer at first</b><i>Blurs the answer so you can try the steps yourself. Turn this off to see it straight away.</i></span>
+          <label class="switch">
+            <input type="checkbox" id="set-hide-answer" onchange="App.hideAnswerChanged()">
+            <span class="tr"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="card" id="ai-card">
+        <div class="lbl">AI Engine</div>
+        <div class="field">
+          <label>Model</label>
+          <select id="set-model" onchange="App.refreshEngineHints()">
+            <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite — FREE (recommended)</option>
+            <option value="gemini-3.5-flash">Gemini 3.5 Flash — FREE (slower, tighter quota)</option>
+            <option value="claude-sonnet-5">Claude Sonnet 5 — paid, premium accuracy</option>
+            <option value="claude-haiku-4-5">Claude Haiku 4.5 — paid, cheapest</option>
+          </select>
+        </div>
+        <div class="field" id="field-gkey">
+          <label>Google AI key (free)</label>
+          <input type="password" id="set-gkey" placeholder="AIza..." autocomplete="off">
+          <div class="hintt">100% free, no credit card. Get one in ~60 seconds: go to <b>aistudio.google.com</b> → sign in with any Google account → <b>Get API key</b>. Free tier allows hundreds of scans per day. Stored only on this device.</div>
+        </div>
+        <div class="field" id="field-akey">
+          <label>Anthropic API key (only for Claude models)</label>
+          <input type="password" id="set-key" placeholder="sk-ant-..." autocomplete="off">
+          <div class="hintt">Optional. Get a key at <b>console.anthropic.com</b>. Each scan costs roughly 1–2¢.</div>
+        </div>
+        <button class="inline-btn" onclick="App.toggleKey()">Show / hide keys</button>
+        <button class="inline-btn" id="test-key-btn" onclick="App.testKey()">Test key</button>
+      </div>
+
+      <div class="card">
+        <div class="lbl">Graphing</div>
+        <div class="field">
+          <label>Desmos API key (optional)</label>
+          <input type="text" id="set-desmos" placeholder="Using built-in demo key">
+          <div class="hintt">CalcHack uses its own Desmos API key. You can override it here with your own if you prefer.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="lbl">Data</div>
+        <div class="setrow">
+          <span class="sr-txt"><b>Scan history</b><i id="data-count">0 saved scans on this device</i></span>
+          <button class="inline-btn danger-btn" style="margin:0" onclick="App.confirmClearHistory()">Delete all</button>
+        </div>
+        <p style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:6px">Signed in, your scans sync to your account and follow you between devices. As a guest they stay on this device only.</p>
+        <div class="setrow" id="delete-acct-row" style="display:none">
+          <span class="sr-txt"><b>Delete my account</b><i>Removes your account, history and any membership</i></span>
+          <button class="inline-btn danger-btn" style="margin:0" onclick="App.confirmDeleteAccount()">Delete</button>
+        </div>
+      </div>
+
+      <button class="big-cta" onclick="App.saveSettings()">Save settings</button>
+
+      <p class="disclaim"><b style="color:var(--accent)">v2.8 &middot; answer toggle</b><br><a href="desmos-cheatsheet.html" style="color:var(--accent);font-weight:700">Desmos cheat sheet</a> &nbsp;·&nbsp; <a href="example.html" style="color:var(--accent);font-weight:700">Worked example</a><br><br><a href="privacy.html" style="color:var(--accent);font-weight:700">Privacy Policy</a> &nbsp;·&nbsp; <a href="terms.html" style="color:var(--accent);font-weight:700">Terms of Service</a> &nbsp;·&nbsp; <a href="mailto:support@calchack.net" style="color:var(--accent);font-weight:700">Contact</a><br><br>CalcHack is an independent study tool. It is not affiliated with or endorsed by College Board®, Desmos, or Google. SAT® is a registered trademark of College Board. Graph powered by the Desmos API.</p>
+    </section>
+  </main>
+
+  <!-- ============ PROCESSING ============ -->
+  <div id="processing">
+    <img id="proc-thumb" alt="" style="display:none">
+    <div class="orb"><svg width="30" height="30" viewBox="0 0 64 64"><path d="M36 12 L22 36 h10 L26 52 L44 28 h-11 z" fill="#ffe14d"/></svg></div>
+    <div id="proc-msg">Reading your question…</div>
+    <div id="proc-sub">This usually takes 5–15 seconds</div>
+  </div>
+
+  <!-- ============ NAV ============ -->
+  <nav>
+    <button id="nav-home" class="on" onclick="App.nav('home')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      Scan
+    </button>
+    <button id="nav-history" onclick="App.nav('history')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      History
+    </button>
+    <button id="nav-paywall" onclick="App.nav('paywall')">
+      <span class="pro-star"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+      Pro
+    </button>
+    <button id="nav-settings" onclick="App.nav('settings')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </button>
+
+    <!-- desktop only: the quiet reassurance a paying stranger looks for -->
+    <div class="nav-foot">
+      <div class="nf">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span>Payments handled by <b>Stripe</b>. Card details never touch our servers.</span>
+      </div>
+      <div class="nf">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Cancel any time from Settings. No auto-renew traps.</span>
+      </div>
+      <div class="nf-legal">
+        <a href="desmos-cheatsheet.html">Cheat sheet</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="mailto:support@calchack.net">Contact</a><br>
+        Independent study tool. Not affiliated with or endorsed by College Board or Desmos.
+      </div>
+    </div>
+  </nav>
+
+  <!-- ============ BOTTOM SHEET ============ -->
+  <div id="sheet" onclick="if(event.target===this)App.closeSheet()">
+    <div class="sheet-card" id="sheet-card"></div>
+  </div>
+
+  <div id="drop-veil"><div class="box">
+    <b>Drop your question here</b>
+    <span>PNG or JPG &middot; a screenshot works best</span>
+  </div></div>
+
+  <div id="toast"></div>
+</div>
+
+<script>
+/* ================================================================
+   CalcHack — SAT Math, the Desmos Way
+   © 2026 CalcHack. Not affiliated with College Board or Desmos.
+   ================================================================ */
+"use strict";
+
+/* ---------- safe storage (works in sandboxed iframes too) ---------- */
+const store = (() => {
+  let mem = {};
+  let ok = false;
+  try { localStorage.setItem("__t","1"); localStorage.removeItem("__t"); ok = true; } catch(e){ ok = false; }
+  return {
+    get(k, d){ try { const v = ok ? localStorage.getItem("ch_"+k) : mem[k]; return v == null ? d : JSON.parse(v); } catch(e){ return d; } },
+    set(k, v){ try { if (ok) localStorage.setItem("ch_"+k, JSON.stringify(v)); else mem[k] = JSON.stringify(v); } catch(e){ mem[k] = JSON.stringify(v); } }
+  };
+})();
+
+/* ====== CLOUD BACKEND (optional) ==============================
+   After deploying the backend (see README-DEPLOY.md), paste your
+   Supabase project URL and anon public key here. When filled in:
+   real logins, server-side scan limits, and your API key stays
+   secret on the server. Leave empty for bring-your-own-key mode.
+   ============================================================== */
+const BACKEND = {
+  url: "",       // e.g. "https://abcdefgh.supabase.co"
+  anonKey: ""    // Supabase → Settings → API → anon public
+};
+
+/* ====== YOUR API SERVER  ←←← THIS IS THE ONE LINE TO EDIT ======
+   Paste the address of your Cloudflare Worker (from calchack-api.js).
+   Once set, students never need an API key — your server holds it —
+   and the key fields disappear from Settings automatically.
+   Leave it empty to go back to bring-your-own-key mode.
+   ============================================================== */
+const API_SERVER = "https://calchack-api.nickboukali.workers.dev";
+
+/* ---------- constants ---------- */
+const FREE_DAILY = 5;
+// Your own Desmos key. Free tier covers personal projects; a paid product
+// needs a Desmos subscription — see the note in Settings.
+const DESMOS_DEMO_KEY = "d2ae466715b54926bd4d829cc774938d";
+const API_URL = "https://api.anthropic.com/v1/messages";
+/* ====== WHERE PEOPLE PAY ======================================
+   Paste your payment link (Stripe Payment Link, Lemon Squeezy,
+   Paddle, Ko-fi — anything that gives you a URL). After someone
+   pays, send them a code you minted from your Worker.
+   Left empty, the app hides the buy button and only offers code
+   redemption, which is the right look while you sell by hand.
+   ============================================================== */
+/* ====== ACCOUNTS (Supabase) ==================================
+   Supabase > Settings > API. Leave empty and the app stays
+   guest-only with free scans; fill it in and people can make
+   accounts and buy memberships.
+   ============================================================== */
+const AUTH = {
+  url: "https://mswmslbiqauttyetqvpf.supabase.co",
+  anonKey: "sb_publishable_5CYUz9tiVtSxcTlrbaL2qg_b_XESXTc"
+};
+
+const DEFAULT_MODEL = "gemini-3.1-flash-lite";   // scored 25/25 on the accuracy test
+const GEMINI_URL = API_SERVER
+  ? API_SERVER.replace(/\/+$/, "") + "/v1beta/models/"
+  : "https://generativelanguage.googleapis.com/v1beta/models/";
+const GRAPH_COLORS = ["#2d70b3","#c74440","#388c46","#6042a6","#fa7e19","#000000"];
+
+const PROMPT_MARKER = "CalcHack/2";   // identifies the app to your server
+
+/* The real instructions live on your server now (calchack-api-v2.js), so they
+   are never readable in this page. This short fallback is only used in
+   bring-your-own-key mode, where there is no server to hold them. */
+const FALLBACK_PROMPT = `You are an SAT math tutor. Read the question in the photo and reply with ONLY a JSON object: {"question_text","topic","difficulty","best_method" (one of "desmos"|"hand"|"hybrid"),"why_method","time_estimate_seconds","steps":[{"title","instruction","desmos_entries":[{"latex","note"}],"what_you_see","viewport"}],"answer","answer_explanation","common_trap","hand_method_summary"}. Keep every latex string directly typeable in Desmos.`;
+
+/* ---------- sample (works with zero setup) ---------- */
+const SAMPLE = {
+  question_text: "If $f(x) = 2x^2 - 7x + 3$, what is the sum of the solutions of $f(x) = 0$?",
+  topic: "Quadratics",
+  difficulty: "medium",
+  best_method: "desmos",
+  why_method: "Desmos shows both zeros instantly — no factoring, no quadratic formula, no sign mistakes.",
+  time_estimate_seconds: 35,
+  steps: [
+    { title: "Graph the function",
+      instruction: "Type the function exactly as written. Desmos draws the parabola immediately — you're looking for where it crosses the x-axis.",
+      desmos_entries: [ { latex: "y=2x^{2}-7x+3", note: "A parabola opening upward appears" } ],
+      what_you_see: "A blue U-shaped parabola dips below the x-axis, crossing it in two places — once just right of $0$ and once near $x=3$.",
+      viewport: { xmin: -2, xmax: 6, ymin: -5, ymax: 9 } },
+    { title: "Tap the zeros",
+      instruction: "Tap the curve, then tap the two gray points where it crosses the x-axis. Desmos labels them $(0.5, 0)$ and $(3, 0)$ — those are your solutions.",
+      desmos_entries: [ { latex: "(0.5,0)", note: "First zero, revealed by tapping the curve" }, { latex: "(3,0)", note: "Second zero" } ],
+      what_you_see: "Two labeled points now sit exactly where the curve meets the x-axis: $(0.5, 0)$ and $(3, 0)$.",
+      viewport: { xmin: -2, xmax: 6, ymin: -5, ymax: 9 } },
+    { title: "Add them in Desmos",
+      instruction: "Type the sum on a new line — Desmos doubles as a scratchpad, so you never do arithmetic in your head under pressure.",
+      desmos_entries: [ { latex: "0.5+3", note: "= 3.5 — done" } ],
+      what_you_see: "The new line shows $0.5+3$ with $=3.5$ displayed on the right side of the row. That's your answer." }
+  ],
+  answer: "3.5 (or 7/2)",
+  answer_explanation: "The zeros are $x = 0.5$ and $x = 3$, so their sum is $3.5$.",
+  common_trap: "Picking 1.5 — that's the PRODUCT of the roots ($c/a = 3/2$), not the sum. The SAT loves to offer both.",
+  hand_method_summary: "Vieta's formulas: sum of roots $= -b/a = 7/2$. Faster if you remember it — about 10 seconds."
+};
+
+/* ---------- app state ---------- */
+const App = {
+  settings: store.get("settings", { key: "", gkey: "", model: DEFAULT_MODEL, desmosKey: "", theme: "dark", hideAnswer: true }),
+  pro: { active: false },
+  account: store.get("account", null),
+  streak: store.get("streak", { last: "", n: 0 }),
+  usage: store.get("usage", { d: "", n: 0 }),
+  history: store.get("history", []),
+  current: null,
+  calc: null,
+  desmosLoading: false,
+  activeStep: -1,
+  procTimer: null,
+  pendingPurchase: false,
+
+  /* ===== init ===== */
+  init(){
+    // Existing installs stored the old default; move them to the validated one once.
+    if (!store.get("modelMigrated", false)){
+      if ((this.settings.model || "") === "gemini-3.5-flash"){
+        this.settings.model = DEFAULT_MODEL;
+        store.set("settings", this.settings);
+      }
+      store.set("modelMigrated", true);
+    }
+    this.pro = this.loadPro();
+    this.applyTheme(this.settings.theme || "dark");
+    document.getElementById("set-theme").value = this.settings.theme || "dark";
+    const ha = document.getElementById("set-hide-answer");
+    // Older installs have no value stored, and the honest default is "on".
+    if (ha) ha.checked = this.settings.hideAnswer !== false;
+    document.getElementById("set-key").value = this.settings.key || "";
+    document.getElementById("set-gkey").value = this.settings.gkey || "";
+    document.getElementById("set-model").value = this.settings.model || DEFAULT_MODEL;
+    document.getElementById("set-desmos").value = this.settings.desmosKey || "";
+    this.refreshEngineHints();
+    const today = this.today();
+    if (this.usage.d !== today) this.usage = { d: today, n: 0 };   // don't persist yet — mirrors may know better
+    this.loadUsageMirrors();
+    this.refreshMeter();
+    this.renderAccountCard();
+    this.renderRecent();
+    this.renderHistory();
+    this.renderHomeChips();
+    this.renderTopics();
+    this.refreshBanner();
+    document.getElementById("file-cam").addEventListener("change", e => this.onFile(e));
+    document.getElementById("file-up").addEventListener("change", e => this.onFile(e));
+    if (!store.get("onboarded", false)) document.getElementById("onboard").classList.add("on");
+    else this.maybeShowAuth();
+    try {
+      matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => {
+        if ((this.settings.theme || "dark") === "auto") this.applyTheme("auto");
+      });
+    } catch(e){}
+    this.syncLayout();
+    this.initDragDrop();
+    this.initInstall();
+    try { matchMedia("(min-width:900px)").addEventListener("change", () => this.syncLayout()); }
+    catch(e){ addEventListener("resize", () => this.syncLayout()); }
+    if (this.serverMode()) this.applyServerMode();
+    this.initAuth().then(() => {
+      this.refreshServerState();
+      this.handleCheckoutReturn();
+    });
+    if (this.cloud()) this.initCloud();
+    this.loadKatex();
+  },
+  today(){ return new Date().toISOString().slice(0,10); },
+
+  /* ===== server mode (your Cloudflare Worker holds the key) ===== */
+  applyServerMode(){
+    // Claude models aren't proxied by the Worker — make sure we're on a served one.
+    if (!/^gemini/.test(this.settings.model || "")){
+      this.settings.model = DEFAULT_MODEL;
+      store.set("settings", this.settings);
+    }
+    const card = document.getElementById("ai-card");
+    if (card){
+      card.innerHTML =
+        '<div class="lbl">AI Engine</div>' +
+        '<div class="setrow"><span class="sr-txt"><b>Connected to the CalcHack server</b>' +
+        '<i>Scanning works straight away — no API key needed on your device.</i></span>' +
+        '<span class="status-pill ok">READY</span></div>' +
+        '<button class="inline-btn" id="test-key-btn" onclick="App.testKey()">Test connection</button>';
+    }
+  },
+
+  /* ===== cloud mode (Supabase backend) ===== */
+  sb: null,
+  serverUsage: null,
+  cloud(){ return !!(BACKEND.url && BACKEND.anonKey); },
+  serverMode(){ return !!API_SERVER; },
+  serverPro: null,          // {pro, until} straight from your Worker
+  async refreshServerState(){
+    if (!this.serverMode()) return;
+    try {
+      const r = await fetch(API_SERVER.replace(/\/+$/, "") + "/status?d=" +
+                            encodeURIComponent(this.deviceId()));
+      if (!r.ok) return;
+      const j = await r.json();
+      this.serverPro = j;
+      if (typeof j.used === "number"){ this.usage = { d: this.today(), n: j.used }; this.saveUsage(); }
+      this.refreshMeter();
+      this.renderSubCard();
+    } catch(e){}
+  },
+  async _removedRedeem(){
+    const el = document.getElementById("code-input");
+    const btn = document.getElementById("code-btn");
+    const code = (el ? el.value : "").trim();
+    if (!code){ this.toast("Enter the code from your email"); return; }
+    if (btn){ btn.disabled = true; btn.textContent = "Checking…"; }
+    try {
+      const r = await fetch(API_SERVER.replace(/\/+$/, "") + "/redeem?d=" +
+                            encodeURIComponent(this.deviceId()), {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code })
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error((j.error && j.error.message) || "That didn't work");
+      await this.refreshServerState();
+      this.openSheet(
+        '<div class="success-pop"><div class="ck">\u2713</div>' +
+        '<div class="sheet-title">You\'re Pro \ud83d\udc51</div>' +
+        '<p class="sheet-sub">Unlimited scans are on until ' + this.fmtFullDate(j.until) + '.</p></div>' +
+        '<button class="big-cta" onclick="App.closeSheet();App.nav(\'home\')">Start scanning</button>'
+      );
+    } catch(err){
+      this.toast(String(err.message || err).slice(0, 100));
+      if (btn){ btn.disabled = false; btn.textContent = "Activate"; }
+    }
+  },
+  _removedRedeemSheet(){
+    this.openSheet(
+      '<div class="sheet-title">Enter your code</div>' +
+      '<p class="sheet-sub">Codes look like <b>CH-ABCD-EFGH</b> and arrive by email after you subscribe.</p>' +
+      '<div class="field"><label>Activation code</label>' +
+      '<input id="code-input" placeholder="CH-ABCD-EFGH" autocapitalize="characters" autocomplete="off"></div>' +
+      '<button class="big-cta" id="code-btn" onclick="App.redeemCode()">Activate</button>'
+    );
+  },
+  deviceId(){
+    let id = store.get("deviceId", null);
+    if (!id){
+      id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random())
+             .replace(/[^A-Za-z0-9-]/g, "").slice(0, 40);
+      store.set("deviceId", id);
+      this.idbSet("deviceId", id);
+    }
+    return id;
+  },
+  async initCloud(){
+    const aiCard = document.getElementById("ai-card");
+    if (aiCard) aiCard.style.display = "none";   // server owns the AI now
+    try {
+      await new Promise((res, rej) => {
+        if (window.supabase) return res();
+        const s = document.createElement("script");
+        s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js";
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    } catch(e){ this.toast("Couldn't reach cloud services — check your connection"); return; }
+    this.sb = window.supabase.createClient(BACKEND.url, BACKEND.anonKey);
+    const { data: { session } } = await this.sb.auth.getSession();
+    this.adoptSession(session);
+    this.sb.auth.onAuthStateChange((_ev, s) => this.adoptSession(s));
+    if (session) this.fetchUsage();
+  },
+  adoptSession(session){
+    if (session && session.user){
+      const u = session.user;
+      this.account = {
+        name: (u.user_metadata && (u.user_metadata.name || u.user_metadata.full_name)) || (u.email ? u.email.split("@")[0] : "Guest"),
+        email: u.email || "guest",
+        created: Date.parse(u.created_at) || Date.now(),
+        anon: !!u.is_anonymous,
+        provider: (u.app_metadata && u.app_metadata.provider) || "email"
+      };
+      this.hideAuth();
+    } else {
+      this.account = null;
+      this.serverUsage = null;
+      this.maybeShowAuthCloud();
+    }
+    this.renderAccountCard(); this.refreshBanner(); this.refreshMeter();
+  },
+  maybeShowAuthCloud(){
+    // Same reasoning: only when something actually requires an account.
+  },
+  async fetchUsage(){
+    try {
+      const r = await this.backendFetch({ action: "usage" });
+      if (r && r.usage){ this.serverUsage = r.usage; this.refreshMeter(); }
+    } catch(e){}
+  },
+  async backendFetch(body){
+    const { data: { session } } = await this.sb.auth.getSession();
+    if (!session) throw new Error("401 not signed in");
+    const r = await fetch(BACKEND.url + "/functions/v1/scan", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "apikey": BACKEND.anonKey,
+        "Authorization": "Bearer " + session.access_token
+      },
+      body: JSON.stringify(body)
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 402){ const e = new Error("limit"); e.usage = j.usage; throw e; }
+    if (!r.ok) throw new Error("HTTP " + r.status + (j.error ? ": " + j.error : ""));
+    return j;
+  },
+
+  /* ===== theme ===== */
+  applyTheme(t){
+    let mode = t;
+    if (t === "auto"){
+      try { mode = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; }
+      catch(e){ mode = "dark"; }
+    }
+    document.body.dataset.theme = mode === "light" ? "light" : "dark";
+    const m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.content = mode === "light" ? "#f5f7fc" : "#0a0e1a";
+  },
+  hideAnswerChanged(){
+    const el = document.getElementById("set-hide-answer");
+    this.settings.hideAnswer = !!(el && el.checked);
+    store.set("settings", this.settings);
+    // Apply to whatever walkthrough is already on screen, so the switch
+    // visibly does something instead of only affecting the next scan.
+    document.querySelectorAll(".answer-card").forEach(c => {
+      c.classList.toggle("revealed", !this.settings.hideAnswer);
+    });
+    this.toast(this.settings.hideAnswer ? "Answers hidden until you tap" : "Answers shown right away");
+  },
+  themeChanged(){
+    this.settings.theme = document.getElementById("set-theme").value;
+    store.set("settings", this.settings);
+    this.applyTheme(this.settings.theme);
+  },
+
+  /* ===== bottom sheet ===== */
+  openSheet(html){
+    document.getElementById("sheet-card").innerHTML = '<div class="sheet-grab"></div>' + html;
+    document.getElementById("sheet").classList.add("on");
+  },
+  closeSheet(){ document.getElementById("sheet").classList.remove("on"); },
+  confirmSheet(title, body, confirmLabel, onConfirm, danger){
+    this._confirmCb = onConfirm;
+    this.openSheet(
+      '<div class="sheet-title">' + title + '</div>' +
+      '<p class="sheet-sub">' + body + '</p>' +
+      '<button class="big-cta ' + (danger ? "danger" : "") + '" onclick="App._confirmCb();App.closeSheet()">' + confirmLabel + '</button>' +
+      '<button class="big-cta ghost" onclick="App.closeSheet()">Never mind</button>'
+    );
+  },
+
+  /* ===== onboarding ===== */
+  obSlides: [
+    { art:"📸", t:"Snap any SAT math question", s:"Take a photo or upload a screenshot of any question from a practice test, Bluebook, or your homework." },
+    { art:"⚡", t:"Get the fastest Desmos path", s:"CalcHack knows every Desmos trick on the digital SAT — and tells you when solving by hand is actually quicker." },
+    { art:"📈", t:"Watch it on a live graph", s:"Tap through each step on a real embedded Desmos calculator, exactly like the one in Bluebook on test day." }
+  ],
+  obIdx: 0,
+  obNext(){
+    this.obIdx++;
+    if (this.obIdx >= this.obSlides.length){ this.finishOnboard(); return; }
+    const s = this.obSlides[this.obIdx];
+    document.getElementById("ob-art").textContent = s.art;
+    document.getElementById("ob-title").textContent = s.t;
+    document.getElementById("ob-sub").textContent = s.s;
+    document.querySelectorAll(".ob-dots i").forEach((d,i)=>d.classList.toggle("on", i===this.obIdx));
+    document.getElementById("ob-next").textContent = this.obIdx === this.obSlides.length-1 ? "Let's go" : "Next";
+  },
+  finishOnboard(){
+    store.set("onboarded", true);
+    document.getElementById("onboard").classList.remove("on");
+    this.maybeShowAuth();
+  },
+
+  /* ===== auth gate ===== */
+  maybeShowAuth(){
+    // Deliberately does nothing on arrival any more. Asking a stranger to choose
+    // an account before they've seen a single walkthrough is a wall at the worst
+    // possible moment, and an account is only genuinely needed to buy one.
+  },
+  showAuthGate(){
+    if (this.signedIn() || this.account) return;
+    document.getElementById("auth").classList.add("on");
+  },
+  hideAuth(){ document.getElementById("auth").classList.remove("on"); },
+  async chooseGuest(){
+    if (this.cloud()){
+      // real anonymous session: guests are still metered server-side
+      try {
+        const { error } = await this.sb.auth.signInAnonymously();
+        if (error) throw error;
+        this.toast("Welcome! You can create an account anytime in Settings");
+      } catch(e){
+        this.toast("Guest sign-in unavailable — enable Anonymous sign-ins in Supabase (README step 5)");
+      }
+      return;
+    }
+    store.set("authChoice", "guest");
+    this.hideAuth();
+    this.toast("Welcome! You can create an account anytime in Settings");
+  },
+  async openGoogleSheet(){
+    if (this.cloud()){
+      // real Google OAuth (requires the app to be hosted over https — see README)
+      try {
+        const { error } = await this.sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } });
+        if (error) throw error;
+      } catch(e){
+        this.toast(location.protocol === "file:"
+          ? "Google sign-in needs the app hosted online (README step 8) — use email for now"
+          : "Google sign-in isn't enabled yet — README step 6, or use email");
+      }
+      return;
+    }
+    this.openSheet(
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">' +
+      '<svg width="22" height="22" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>' +
+      '<span class="sheet-title">Sign in with Google</span></div>' +
+      '<p class="sheet-sub">Enter the Google address you want your CalcHack account tied to.</p>' +
+      '<div class="field"><label>Google email</label><input id="g-email" type="email" placeholder="you@gmail.com" autocomplete="email"></div>' +
+      '<button class="big-cta" onclick="App.submitGoogle()">Continue</button>' +
+      '<p class="fine">Stored on this device only.</p>'
+    );
+  },
+  submitGoogle(){
+    const email = (document.getElementById("g-email").value || "").trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ this.toast("That email doesn't look right"); return; }
+    const name = email.split("@")[0].replace(/[._\d]+/g, " ").trim().replace(/\b\w/g, c => c.toUpperCase()) || "Student";
+    this.account = { name, email, created: Date.now(), provider: "google" };
+    store.set("account", this.account);
+    store.set("authChoice", "account");
+    this.closeSheet(); this.hideAuth();
+    this.renderAccountCard(); this.refreshBanner();
+    this.toast("Signed in with Google ✓");
+    this.continuePendingPurchase();
+  },
+  continuePendingPurchase(){
+    if (this.pendingPurchase){
+      this.pendingPurchase = false;
+      setTimeout(() => this.openPurchase(), 450);
+    }
+  },
+
+
+  /* ===== accounts (Supabase) + payments (Stripe) =====
+     The app never decides who has paid. It asks the server, sends the
+     server a token proving who it is, and shows whatever comes back. */
+  sb: null,
+  session: null,
+  server: null,            // {signedIn, pro, until, used, limit, canCheckout}
+  authReady: false,
+
+  authOn(){ return !!(AUTH.url && AUTH.anonKey); },
+
+  async initAuth(){
+    if (!this.authOn()){ this.authReady = true; return; }
+    try {
+      await new Promise((res, rej) => {
+        if (window.supabase) return res();
+        const sc = document.createElement("script");
+        sc.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js";
+        sc.onload = res; sc.onerror = rej;
+        document.head.appendChild(sc);
+      });
+    } catch(e){ this.authReady = true; return; }
+    this.sb = window.supabase.createClient(AUTH.url, AUTH.anonKey);
+    const { data } = await this.sb.auth.getSession();
+    this.session = data ? data.session : null;
+    this.sb.auth.onAuthStateChange((_e, s) => {
+      this.session = s;
+      this.renderAccountCard();
+      this.refreshServerState();
+    });
+    this.authReady = true;
+    this.renderAccountCard();
+  },
+
+  token(){ return this.session && this.session.access_token; },
+  signedIn(){ return !!this.token(); },
+  me(){
+    const u = this.session && this.session.user;
+    if (!u) return null;
+    const name = (u.user_metadata && (u.user_metadata.full_name || u.user_metadata.name)) ||
+                 (u.email ? u.email.split("@")[0] : "Student");
+    return { name, email: u.email || "", created: Date.parse(u.created_at) || Date.now() };
+  },
+
+  authHeaders(extra){
+    const h = Object.assign({ "content-type": "application/json" }, extra || {});
+    const t = this.token();
+    if (t) h["Authorization"] = "Bearer " + t;
+    return h;
+  },
+
+  /* ---- ask the server what this person is allowed to do ---- */
+  async refreshServerState(){
+    if (!this.serverMode()) return;
+    try {
+      const r = await fetch(API_SERVER.replace(/\/+$/, "") + "/status?d=" +
+                            encodeURIComponent(this.deviceId()), { headers: this.authHeaders() });
+      if (!r.ok) return;
+      const j = await r.json();
+      this.server = j;
+      if (typeof j.used === "number"){ this.usage = { d: this.today(), n: j.used }; this.saveUsage(); }
+      this.refreshMeter();
+      this.renderSubCard();
+      this.renderAccountCard();
+      this.refreshBanner();
+      const row = document.getElementById("delete-acct-row");
+      if (row) row.style.display = j.signedIn ? "" : "none";
+      if (j.signedIn && !this._pulled){ this._pulled = true; this.pullHistory(); }
+      if (!j.signedIn) this._pulled = false;
+    } catch(e){}
+  },
+
+  /* ---- sign up / in ---- */
+  async submitAuth(mode){
+    const email = (document.getElementById("au-email").value || "").trim();
+    const pass = (document.getElementById("au-pass").value || "");
+    const btn = document.getElementById("au-btn");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ this.toast("That email doesn't look right"); return; }
+    if (pass.length < 8){ this.toast("Use at least 8 characters"); return; }
+    if (btn){ btn.disabled = true; btn.textContent = "One sec…"; }
+    try {
+      const { data, error } = mode === "up"
+        ? await this.sb.auth.signUp({ email, password: pass })
+        : await this.sb.auth.signInWithPassword({ email, password: pass });
+      if (error) throw error;
+      if (mode === "up" && data && !data.session){
+        this.closeSheet();
+        this.toast("Check your email to confirm, then sign in");
+        return;
+      }
+      this.closeSheet();
+      this.hideAuth();
+      await this.refreshServerState();
+      if (mode === "up") this.ping("signups");
+      this.toast(mode === "up" ? "Account created ✓" : "Signed in ✓");
+      this.continuePendingPurchase();
+    } catch(err){
+      this.toast(String(err.message || err).slice(0, 100));
+      if (btn){ btn.disabled = false; btn.textContent = mode === "up" ? "Create account" : "Sign in"; }
+    }
+  },
+
+  async signInGoogle(){
+    if (!this.sb){ this.toast("Accounts aren't switched on yet"); return; }
+    try {
+      const { error } = await this.sb.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: location.origin + location.pathname,
+          // Without this Google silently reuses whichever account the browser
+          // last signed in with, so someone with a school and a personal
+          // account can never choose between them.
+          queryParams: { prompt: "select_account" },
+        }
+      });
+      if (error) throw error;
+    } catch(e){
+      this.toast(location.protocol === "file:"
+        ? "Google sign-in needs the hosted site, not a local file"
+        : "Google sign-in isn't enabled yet — use email for now");
+    }
+  },
+
+  openAuthSheet(mode){
+    if (!this.authOn()){ this.toast("Accounts aren't switched on yet"); return; }
+    const up = mode !== "in";
+    this.openSheet(
+      '<div class="sheet-title">' + (up ? "Create your account" : "Sign in") + '</div>' +
+      '<p class="sheet-sub">' + (up
+        ? "Your scans, streak and membership follow you to any device."
+        : "Welcome back.") + '</p>' +
+      '<button class="btn-google" onclick="App.signInGoogle()">' +
+      '<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>' +
+      'Continue with Google</button>' +
+      '<div style="text-align:center;color:var(--muted);font-size:12px;margin:14px 0 2px">or with email</div>' +
+      '<div class="field"><label>Email</label><input id="au-email" type="email" placeholder="you@school.edu" autocomplete="email"></div>' +
+      '<div class="field"><label>Password</label><input id="au-pass" type="password" placeholder="8+ characters" autocomplete="' + (up ? "new-password" : "current-password") + '"></div>' +
+      '<button class="big-cta" id="au-btn" onclick="App.submitAuth(\'' + (up ? "up" : "in") + '\')">' + (up ? "Create account" : "Sign in") + '</button>' +
+      '<button class="big-cta ghost" onclick="App.openAuthSheet(\'' + (up ? "in" : "up") + '\')">' +
+      (up ? "I already have an account" : "Create one instead") + '</button>' +
+      (up ? '<p class="age-note">By creating an account you confirm you\'re <b>13 or older</b> and agree to the ' +
+            '<a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.<br>' +
+            'Under 18? Ask a parent before buying a membership.</p>' : '')
+    );
+  },
+
+  async signOutReal(){
+    this.confirmSheet("Sign out?", "Your membership stays on your account — sign back in anytime to use it.", "Sign out", async () => {
+      try { await this.sb.auth.signOut(); } catch(e){}
+      this.session = null; this.server = null;
+      this.renderAccountCard(); this.refreshMeter(); this.renderSubCard();
+      this.toast("Signed out");
+    }, true);
+  },
+
+  /* ---- paying ---- */
+  async startCheckout(plan){
+    if (!this.signedIn()){ this.pendingPurchase = true; this.openAuthSheet("up"); return; }
+    const btn = document.getElementById("buy-btn");
+    if (btn){ btn.disabled = true; btn.textContent = "Opening checkout…"; }
+    try {
+      const r = await fetch(API_SERVER.replace(/\/+$/, "") + "/checkout", {
+        method: "POST", headers: this.authHeaders(), body: JSON.stringify({ plan: plan || this.plan })
+      });
+      const j = await r.json();
+      if (!r.ok || !j.url) throw new Error((j.error && j.error.message) || "Couldn't open checkout");
+      location.href = j.url;              // Stripe's page; Apple Pay appears there automatically
+    } catch(err){
+      this.toast(String(err.message || err).slice(0, 100));
+      if (btn){ btn.disabled = false; btn.textContent = "Continue to checkout"; }
+    }
+  },
+
+  async openBilling(){
+    try {
+      const r = await fetch(API_SERVER.replace(/\/+$/, "") + "/portal", {
+        method: "POST", headers: this.authHeaders(), body: "{}"
+      });
+      const j = await r.json();
+      if (!r.ok || !j.url) throw new Error((j.error && j.error.message) || "Couldn't open billing");
+      location.href = j.url;
+    } catch(err){ this.toast(String(err.message || err).slice(0, 100)); }
+  },
+
+  /* ---- coming back from Stripe ---- */
+  async handleCheckoutReturn(){
+    const q = new URLSearchParams(location.search);
+    const state = q.get("checkout");
+    if (!state) return;
+    history.replaceState({}, "", location.pathname);
+    if (state === "cancel"){ this.toast("Checkout cancelled — no charge was made"); return; }
+    this.openSheet('<div class="success-pop"><div class="ck">✓</div>' +
+      '<div class="sheet-title">Payment received</div>' +
+      '<p class="sheet-sub">Switching your account to Pro…</p></div>');
+    // Stripe's webhook usually lands within a second or two; poll briefly.
+    for (let i = 0; i < 10; i++){
+      await this.refreshServerState();
+      if (this.proActive()){
+        this.openSheet('<div class="success-pop"><div class="ck">✓</div>' +
+          '<div class="sheet-title">You\'re Pro 👑</div>' +
+          '<p class="sheet-sub">Unlimited scans, effective now.</p></div>' +
+          '<button class="big-cta" onclick="App.closeSheet();App.nav(\'home\')">Start scanning</button>');
+        return;
+      }
+      await new Promise(r => setTimeout(r, 1200));
+    }
+    this.openSheet('<div class="sheet-title">Payment received</div>' +
+      '<p class="sheet-sub">Your membership is taking a moment to activate. It will turn on by itself — pull the app open again in a minute, or contact support if it doesn\'t.</p>' +
+      '<button class="big-cta" onclick="App.closeSheet()">OK</button>');
+  },
+
+  /* ===== layout: same app, two shapes ===== */
+  isDesktop(){ try { return matchMedia("(min-width:900px)").matches; } catch(e){ return false; } },
+  primaryScan(){ return this.isDesktop() ? this.openUpload() : this.openCamera(); },
+  syncLayout(){
+    const d = this.isDesktop();
+    document.body.classList.toggle("desk", d);
+    const t = document.getElementById("scan-title"), sb = document.getElementById("scan-sub");
+    const up = document.getElementById("upload-btn");
+    if (t) t.textContent = d ? "Upload a question" : "Scan a question";
+    if (sb) sb.textContent = d
+      ? "Drag a screenshot in, or click to browse"
+      : "Point your camera at any SAT math problem";
+    if (up) up.style.display = d ? "none" : "";
+    const ic = document.querySelector("#scan-cta .ic svg");
+    if (ic) ic.innerHTML = d
+      ? '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>'
+      : '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>';
+  },
+  initDragDrop(){
+    const hasFiles = e => e.dataTransfer && Array.from(e.dataTransfer.types || []).indexOf("Files") !== -1;
+    let depth = 0;
+    addEventListener("dragenter", e => { if (!hasFiles(e)) return; e.preventDefault(); depth++; document.body.classList.add("dragging"); });
+    addEventListener("dragover", e => { if (hasFiles(e)) e.preventDefault(); });
+    addEventListener("dragleave", e => { if (!hasFiles(e)) return; if (--depth <= 0){ depth = 0; document.body.classList.remove("dragging"); } });
+    addEventListener("drop", e => {
+      if (!hasFiles(e)) return;
+      e.preventDefault(); depth = 0; document.body.classList.remove("dragging");
+      const f = (e.dataTransfer.files || [])[0];
+      if (!f) return;
+      if (!/^image\//.test(f.type)) { this.toast("That needs to be an image file"); return; }
+      if (this.canScan()) this.onFile({ target: { files: [f], value: "" } });
+    });
+  },
+
+  /* ===== navigation ===== */
+  nav(v){
+    document.querySelectorAll(".view").forEach(el => el.classList.remove("active"));
+    document.getElementById("view-"+v).classList.add("active");
+    document.querySelectorAll("nav button").forEach(b => b.classList.remove("on"));
+    const nb = document.getElementById("nav-"+v); if (nb) nb.classList.add("on");
+    document.getElementById("main").scrollTop = 0;
+    if (v === "home"){ this.renderRecent(); this.renderHomeChips(); this.refreshBanner(); this.renderTopics(); }
+    if (v === "history") this.renderHistory();
+    if (v === "settings"){ this.renderAccountCard(); this.renderSubCard(); }
+    if (v === "paywall"){ this.selPlan(this.plan); this.ping("paywall_view"); }   // sets CTA text + hides it when there's nowhere to buy
+  },
+
+  /* ===== subscription state =====
+     pro = { active, plan: 'm'|'y', started, renewsAt, autoRenew }
+     Cancel = turn off auto-renew; Pro stays active until renewsAt (real store semantics). */
+  PERIOD: { m: 30 * 864e5, q: 91 * 864e5, y: 365 * 864e5 },
+  PRICE:  { m: "$6.99/mo", q: "$14.99/3mo", y: "$39.99/yr" },
+  loadPro(){
+    let p = store.get("pro", null);
+    if (p === true) p = { active: true, plan: "y", started: Date.now(), renewsAt: Date.now() + this.PERIOD.y, autoRenew: true };
+    if (!p || typeof p !== "object") p = { active: false };
+    if (p.active && p.renewsAt && Date.now() > p.renewsAt){
+      if (p.autoRenew !== false){
+        while (Date.now() > p.renewsAt) p.renewsAt += this.PERIOD[p.plan || "y"];
+        setTimeout(()=>this.toast("Your Pro membership renewed"), 1200);
+      } else {
+        p = { active: false };
+        setTimeout(()=>this.toast("Your Pro membership has ended"), 1200);
+      }
+    }
+    store.set("pro", p);
+    return p;
+  },
+  proActive(){
+    if (this.serverMode()) return !!(this.server && this.server.pro);   // only the server decides
+    if (this.cloud() && this.serverUsage) return !!this.serverUsage.pro;
+    return !!(this.pro && this.pro.active);
+  },
+  fmtFullDate(ms){ return new Date(ms).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" }); },
+
+  /* ===== usage / metering (mirrored to 3 stores so a reload can't reset it) ===== */
+  scansLeft(){ return Math.max(0, FREE_DAILY - this.usage.n); },
+  saveUsage(){
+    store.set("usage", this.usage);
+    try { document.cookie = "chu=" + encodeURIComponent(JSON.stringify(this.usage)) + ";max-age=31536000;path=/;SameSite=Lax"; } catch(e){}
+    this.idbSet("usage", this.usage);
+  },
+  loadUsageMirrors(){
+    const adopt = (m) => {
+      if (m && m.d === this.today() && typeof m.n === "number" && m.n > this.usage.n){
+        this.usage = { d: m.d, n: m.n };
+        this.refreshMeter();
+      }
+    };
+    try {
+      const c = document.cookie.split(";").map(s => s.trim()).find(s => s.startsWith("chu="));
+      if (c) adopt(JSON.parse(decodeURIComponent(c.slice(4))));
+    } catch(e){}
+    // re-sync all mirrors only AFTER the async IDB read has had its say
+    this.idbGet("usage", (m) => { adopt(m); this.saveUsage(); });
+  },
+  idbSet(k, v){
+    try {
+      const rq = indexedDB.open("calchack", 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore("kv");
+      rq.onsuccess = () => { try { rq.result.transaction("kv","readwrite").objectStore("kv").put(v, k); } catch(e){} };
+    } catch(e){}
+  },
+  idbGet(k, cb){
+    try {
+      const rq = indexedDB.open("calchack", 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore("kv");
+      rq.onsuccess = () => {
+        try {
+          const g = rq.result.transaction("kv","readonly").objectStore("kv").get(k);
+          g.onsuccess = () => cb(g.result);
+        } catch(e){}
+      };
+    } catch(e){}
+  },
+  refreshMeter(){
+    const pill = document.getElementById("meter-pill");
+    const txt = document.getElementById("meter-text");
+    const line = document.getElementById("usage-line");
+    const fill = document.getElementById("usage-fill");
+    pill.classList.remove("low","out","pro");
+    const pt = document.getElementById("pro-toggle-btn");
+    if (this.proActive()){
+      pill.classList.add("pro"); txt.textContent = "PRO · unlimited";
+      line.textContent = "Pro — unlimited scans"; fill.style.width = "100%";
+      if (pt) pt.textContent = "Disable Pro";
+    } else {
+      if (pt) pt.textContent = "Enable Pro";
+      const lim = (this.cloud() && this.serverUsage) ? this.serverUsage.limit : FREE_DAILY;
+      const left = (this.cloud() && this.serverUsage)
+        ? Math.max(0, this.serverUsage.limit - this.serverUsage.used)
+        : this.scansLeft();
+      txt.textContent = left + (left === 1 ? " scan left" : " scans left");
+      line.textContent = left + " of " + lim + " free scans left today";
+      fill.style.width = (left / lim * 100) + "%";
+      if (left === 0) pill.classList.add("out"); else if (left <= 2) pill.classList.add("low");
+    }
+    this.renderSubCard();
+  },
+  canScan(){
+    if (this.cloud()){
+      // the server is the real gate (402); this is just a friendly pre-check
+      if (this.serverUsage && !this.serverUsage.pro && this.serverUsage.used >= this.serverUsage.limit){
+        this.toast("You're out of free scans for today");
+        setTimeout(()=>this.nav("paywall"), 600);
+        return false;
+      }
+      return true;
+    }
+    if (this.proActive() || this.scansLeft() > 0) return true;
+    this.toast("You're out of free scans for today");
+    setTimeout(()=>this.nav("paywall"), 600);
+    return false;
+  },
+  consumeScan(){
+    this.bumpStreak();
+    if (this.cloud() || this.serverMode()){ this.refreshMeter(); return; }   // server already counted it
+    if (this.proActive()) return;
+    this.usage.n++; this.saveUsage(); this.refreshMeter();
+  },
+  resetUsage(){ this.usage.n = 0; this.saveUsage(); this.refreshMeter(); this.toast("Usage reset"); },
+  togglePro(){
+    this.pro = this.proActive()
+      ? { active: false }
+      : { active: true, plan: "y", started: Date.now(), renewsAt: Date.now() + this.PERIOD.y, autoRenew: true };
+    store.set("pro", this.pro); this.refreshMeter();
+    this.toast(this.proActive() ? "Pro enabled" : "Pro disabled");
+  },
+
+  /* ===== streak ===== */
+  bumpStreak(){
+    const today = this.today();
+    if (this.streak.last === today) return;
+    const y = new Date(Date.now() - 864e5).toISOString().slice(0,10);
+    this.streak = { last: today, n: this.streak.last === y ? (this.streak.n || 0) + 1 : 1 };
+    store.set("streak", this.streak);
+    this.renderHomeChips();
+  },
+  renderHomeChips(){
+    const el = document.getElementById("home-chips");
+    if (!el) return;
+    const chips = [];
+    const today = this.today(), y = new Date(Date.now() - 864e5).toISOString().slice(0,10);
+    const live = (this.streak.last === today || this.streak.last === y) ? this.streak.n : 0;
+    if (live >= 2) chips.push('<span class="chip hl">🔥 ' + live + '-day streak</span>');
+    if (this.history.length >= 3) chips.push('<span class="chip">' + this.history.length + ' questions solved</span>');
+    el.innerHTML = chips.join("");
+    el.style.display = chips.length ? "flex" : "none";
+  },
+
+  /* ===== paywall / purchase ===== */
+  plan: "q",   // the one that matches how long people actually prep
+  PLANS: {
+    m: { price: "$6.99", cta: "Start Pro — $6.99/mo",
+         renew: "$6.99 billed today, then $6.99 every month until you cancel." },
+    q: { price: "$14.99", cta: "Start Pro — $14.99 for 3 months",
+         renew: "$14.99 billed today, then $14.99 every 3 months until you cancel." },
+    y: { price: "$39.99", cta: "Start Pro — $39.99/yr",
+         renew: "$39.99 billed today, then $39.99 every year until you cancel." },
+  },
+  selPlan(p){
+    if (!this.PLANS[p]) p = "q";
+    // Don't offer a plan the server has no price configured for.
+    const avail = (this.server && this.server.plans) || null;
+    if (avail && !avail[p]) p = ["q","y","m"].find(k => avail[k]) || p;
+    this.plan = p;
+    ["m","q","y"].forEach(k => {
+      const el = document.getElementById("plan-" + k);
+      if (!el) return;
+      el.classList.toggle("sel", k === p);
+      el.style.display = (avail && !avail[k]) ? "none" : "";
+    });
+    const rl = document.getElementById("renew-line");
+    if (rl) rl.textContent = this.PLANS[p].renew;
+    const cta = document.getElementById("pw-cta");
+    cta.textContent = this.PLANS[p].cta;
+    // the server tells us whether Stripe is actually wired up
+    const buyable = !this.serverMode() || (this.server && this.server.canCheckout);
+    cta.style.display = buyable ? "" : "none";
+    const fine = document.getElementById("pw-fine");
+    if (fine && !buyable) fine.textContent = "Sign in to subscribe — free scans reset every day.";
+  },
+  openPurchase(){
+    if (this.proActive()){ this.toast("You're already a Pro member 👑"); return; }
+    if (this.serverMode()){
+      if (!this.signedIn()){
+        // an account has to exist before money changes hands
+        this.pendingPurchase = true;
+        this.openSheet(
+          '<div class="sheet-title">Create an account to subscribe</div>' +
+          '<p class="sheet-sub">Your membership is tied to an account so it works on your phone and laptop, and can be restored if you switch devices. Takes about thirty seconds.</p>' +
+          '<button class="big-cta" onclick="App.openAuthSheet(\'up\')">Create account</button>' +
+          '<button class="big-cta ghost" onclick="App.openAuthSheet(\'in\')">I already have one</button>'
+        );
+        return;
+      }
+      const p = this.plan;
+      this.openSheet(
+        '<div class="sheet-title">CalcHack Pro — ' + (p === "m" ? "Monthly" : p === "q" ? "3 months" : "Annual") + '</div>' +
+        '<p class="sheet-sub">Unlimited scans. You\'ll pay on Stripe\'s secure page — Apple Pay works there — and Pro switches on the moment it clears.</p>' +
+        '<div class="renew-box"><b>' + this.PLANS[p].renew + '</b>' +
+        '<span>Cancel any time in Settings. You keep Pro until the end of the period you paid for. Full refund within 14 days if it\'s not for you.</span></div>' +
+        '<button class="big-cta" id="buy-btn" onclick="App.startCheckout()">Continue to checkout</button>' +
+        '<button class="big-cta ghost" onclick="App.closeSheet()">Not now</button>'
+      );
+      return;
+    }
+    if (!this.account || this.account.anon){
+      // guests (including cloud anonymous sessions) must create an account before subscribing
+      this.pendingPurchase = true;
+      this.openSheet(
+        '<div class="sheet-title">Create an account to subscribe</div>' +
+        '<p class="sheet-sub">Your Pro membership is tied to an account so it can be restored on a new phone and managed anywhere. Takes 30 seconds — then you\'ll come straight back to checkout.</p>' +
+        '<button class="big-cta" onclick="App.openAccountSheet(\'signup\')">Create free account</button>' +
+        '<button class="btn-google" onclick="App.openGoogleSheet()">' +
+        '<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>' +
+        'Continue with Google</button>' +
+        '<button class="big-cta ghost" onclick="App.pendingPurchase=false;App.closeSheet()">Maybe later</button>'
+      );
+      return;
+    }
+    const p = this.plan;
+    const price = p === "m" ? "$6.99" : "$39.99";
+    const per = p === "m" ? "month" : "year";
+    const renew = Date.now() + this.PERIOD[p];
+    this.openSheet(
+      '<div class="sheet-title">Confirm your subscription</div>' +
+      '<p class="sheet-sub">CalcHack Pro — unlimited scans, live graphs, full history.</p>' +
+      '<div style="margin-top:14px">' +
+        '<div class="sheet-row"><span class="k">Plan</span><span class="v">Pro ' + (p==="m"?"Monthly":"Annual") + '</span></div>' +
+        '<div class="sheet-row"><span class="k">Price</span><span class="v">' + price + ' / ' + per + '</span></div>' +
+        '<div class="sheet-row"><span class="k">First renewal</span><span class="v">' + this.fmtFullDate(renew) + '</span></div>' +
+        '<div class="sheet-row"><span class="k">Cancel</span><span class="v">Anytime in Settings</span></div>' +
+      '</div>' +
+      '<button class="big-cta" id="buy-btn" onclick="App.completePurchase()">Subscribe — ' + price + ' (demo)</button>' +
+      '<p class="fine">Secure checkout by Stripe.</p>'
+    );
+  },
+  completePurchase(){
+    if (this.cloud()){
+      // server-side entitlements can't be faked from the client (that's the point!)
+      this.openSheet(
+        '<div class="sheet-title">Almost — payments need the store</div>' +
+        '<p class="sheet-sub">In the cloud build, Pro is granted by the server, so a demo button can\'t fake it (that\'s the security working). In production this connects to Apple In-App Purchase via RevenueCat. To unlock Pro for testing right now, run the one-line SQL in README step 7 — takes 20 seconds.</p>' +
+        '<button class="big-cta" onclick="App.closeSheet()">Got it</button>'
+      );
+      return;
+    }
+    const btn = document.getElementById("buy-btn");
+    if (btn){ btn.disabled = true; btn.textContent = "Processing…"; }
+    setTimeout(() => {
+      this.pro = { active: true, plan: this.plan, started: Date.now(), renewsAt: Date.now() + this.PERIOD[this.plan], autoRenew: true };
+      store.set("pro", this.pro);
+      this.refreshMeter();
+      this.openSheet(
+        '<div class="success-pop"><div class="ck">✓</div>' +
+        '<div class="sheet-title">Welcome to Pro 👑</div>' +
+        '<p class="sheet-sub">Unlimited scans are live. Renews ' + this.fmtFullDate(this.pro.renewsAt) + ' — manage or cancel anytime in Settings.</p></div>' +
+        '<button class="big-cta" onclick="App.closeSheet();App.nav(\'home\')">Start scanning</button>'
+      );
+    }, 1400);
+  },
+  restorePurchases(){
+    this.toast(this.proActive() ? "Pro membership restored ✓" : "No previous purchases found (demo)");
+  },
+
+  /* ===== membership management ===== */
+  renderSubCard(){
+    const el = document.getElementById("sub-card");
+    if (!el) return;
+    if (!this.proActive()){ el.style.display = "none"; return; }
+    el.style.display = "block";
+    if (this.serverMode()){
+      const sv = this.server || {};
+      const ending = !!sv.cancelAtPeriodEnd;
+      el.innerHTML =
+        '<div class="lbl">Membership</div>' +
+        '<div class="setrow"><span class="sr-txt"><b>CalcHack Pro</b><i>' +
+        (sv.until ? (ending ? "Ends " : "Renews ") + this.fmtFullDate(sv.until) : "Unlimited scans") +
+        '</i></span><span class="status-pill ' + (ending ? "off" : "ok") + '">' +
+        (ending ? "ENDING" : "ACTIVE") + '</span></div>' +
+        '<button class="inline-btn" onclick="App.openBilling()">Manage or cancel</button>';
+      return;
+    }
+    if (this.cloud()){
+      el.innerHTML =
+        '<div class="lbl">Membership</div>' +
+        '<div class="setrow"><span class="sr-txt"><b>CalcHack Pro</b>' +
+        '<i>Verified by the server.</i></span>' +
+        '<span class="status-pill ok">ACTIVE</span></div>';
+      return;
+    }
+    const p = this.pro;
+    const on = p.autoRenew !== false;
+    el.innerHTML =
+      '<div class="lbl">Membership</div>' +
+      '<div class="setrow"><span class="sr-txt"><b>CalcHack Pro — ' + (p.plan === "m" ? "Monthly" : "Annual") + '</b>' +
+      '<i>' + (on ? "Renews " + this.fmtFullDate(p.renewsAt) + " · " + this.PRICE[p.plan || "y"]
+                 : "Auto-renew is off — Pro ends " + this.fmtFullDate(p.renewsAt)) + '</i></span>' +
+      '<span class="status-pill ' + (on ? "ok" : "off") + '">' + (on ? "ACTIVE" : "ENDING") + '</span></div>' +
+      '<div class="setrow"><span class="sr-txt"><b>Auto-renew</b><i>Turn off to cancel — you keep Pro until the end of the period you paid for</i></span>' +
+      '<label class="switch"><input type="checkbox" ' + (on ? "checked" : "") + ' onchange="App.setAutoRenew(this.checked)"><span class="tr"></span></label></div>' +
+      (on ? '<button class="inline-btn danger-btn" onclick="App.cancelMembership()">Cancel membership</button>'
+          : '<button class="inline-btn" onclick="App.setAutoRenew(true)">Resume membership</button>');
+  },
+  setAutoRenew(v){
+    if (!this.proActive()) return;
+    this.pro.autoRenew = !!v;
+    store.set("pro", this.pro);
+    this.renderSubCard();
+    this.toast(v ? "Auto-renew is back on ✓" : "Cancelled — Pro stays active until " + this.fmtFullDate(this.pro.renewsAt));
+  },
+  cancelMembership(){
+    this.confirmSheet(
+      "Cancel your membership?",
+      "You won't be charged again. You keep Pro until <b>" + this.fmtFullDate(this.pro.renewsAt) + "</b>, then the free plan (" + FREE_DAILY + " scans/day) kicks in. You can resume anytime.",
+      "Turn off auto-renew",
+      () => this.setAutoRenew(false),
+      true
+    );
+  },
+
+  /* ===== account (optional) ===== */
+  renderAccountCard(){
+    const el = document.getElementById("acct-card");
+    if (!el) return;
+    if (this.authOn()){
+      const me = this.me();
+      if (me){
+        const initial = (me.name || me.email || "?").trim().charAt(0).toUpperCase();
+        el.innerHTML =
+          '<div class="lbl">Account</div>' +
+          '<div class="acct-row"><div class="avatar">' + this.esc(initial) + '</div>' +
+          '<div><div class="nm">' + this.esc(me.name) + '</div>' +
+          '<div class="em">' + this.esc(me.email) + '</div></div></div>' +
+          '<button class="inline-btn danger-btn" onclick="App.signOutReal()">Sign out</button>';
+      } else {
+        el.innerHTML =
+          '<div class="lbl">Account</div>' +
+          '<p style="font-size:13.5px;line-height:1.55;margin-top:2px">You\'re using CalcHack as a guest. Free scans work fine — an account keeps your membership across devices.</p>' +
+          '<button class="inline-btn" onclick="App.openAuthSheet(\'up\')">Create free account</button>' +
+          '<button class="inline-btn" onclick="App.openAuthSheet(\'in\')">Sign in</button>';
+      }
+      const dc = document.getElementById("data-count");
+      if (dc) dc.textContent = this.history.length + " saved scan" + (this.history.length === 1 ? "" : "s") + " on this device";
+      return;
+    }
+    if (this.account && this.account.anon){
+      el.innerHTML =
+        '<div class="lbl">Account</div>' +
+        '<p style="font-size:13.5px;line-height:1.55;margin-top:2px"><b>You\'re browsing as a guest.</b> Your free scans are tracked securely, but Pro and cross-device sync need a real account.</p>' +
+        '<button class="inline-btn" onclick="App.openAccountSheet(\'signup\')">Create free account</button>' +
+        '<button class="inline-btn" onclick="App.openGoogleSheet()">Continue with Google</button>' +
+        '<button class="inline-btn danger-btn" onclick="App.signOut()">End guest session</button>';
+      const dc0 = document.getElementById("data-count");
+      if (dc0) dc0.textContent = this.history.length + " saved scan" + (this.history.length === 1 ? "" : "s") + " on this device";
+      return;
+    }
+    if (this.account){
+      const initial = (this.account.name || this.account.email || "?").trim().charAt(0).toUpperCase();
+      el.innerHTML =
+        '<div class="lbl">Account</div>' +
+        '<div class="acct-row"><div class="avatar">' + this.esc(initial) + '</div>' +
+        '<div><div class="nm">' + this.esc(this.account.name || "Student") + '</div>' +
+        '<div class="em">' + this.esc(this.account.email) + '</div>' +
+        '<div class="em">Member since ' + this.fmtFullDate(this.account.created) + '</div></div></div>' +
+        '' +
+        '<button class="inline-btn danger-btn" onclick="App.signOut()">Sign out</button>';
+    } else {
+      el.innerHTML =
+        '<div class="lbl">Account</div>' +
+        '<p style="font-size:13.5px;line-height:1.55;margin-top:2px"><b>You\'re browsing as a guest.</b> Free scans work fine without an account — you\'ll only need one to buy a Pro membership.</p>' +
+        '<button class="inline-btn" onclick="App.openAccountSheet(\'signup\')">Create free account</button>' +
+        '<button class="inline-btn" onclick="App.openGoogleSheet()">Continue with Google</button>' +
+        '<button class="inline-btn" onclick="App.openAccountSheet(\'signin\')">Sign in</button>';
+    }
+    const dc = document.getElementById("data-count");
+    if (dc) dc.textContent = this.history.length + " saved scan" + (this.history.length === 1 ? "" : "s") + " on this device";
+  },
+  openAccountSheet(mode){
+    const signup = mode === "signup";
+    const c = this.cloud();
+    this.openSheet(
+      '<div class="sheet-title">' + (signup ? "Create your free account" : "Sign in") + '</div>' +
+      '<p class="sheet-sub">' + (c ? "Your account works on any device." : "Your scans stay on this device until accounts are switched on.") + '</p>' +
+      (signup && !c ? '<div class="field"><label>Name</label><input id="acct-name" placeholder="Alex Rivera" autocomplete="name"></div>' : "") +
+      '<div class="field"><label>Email</label><input id="acct-email" type="email" placeholder="you@school.edu" autocomplete="email"></div>' +
+      (c ? '<div class="field"><label>Password</label><input id="acct-pass" type="password" placeholder="6+ characters" autocomplete="' + (signup ? "new-password" : "current-password") + '"></div>' : "") +
+      '<button class="big-cta" id="acct-submit" onclick="App.submitAccount(' + signup + ')">' + (signup ? "Create account" : "Sign in") + '</button>' +
+      '<p class="fine">' + (c ? "Secured by Supabase Auth." : "Stored on this device only.") + '</p>'
+    );
+  },
+  async submitAccount(signup){
+    const email = (document.getElementById("acct-email").value || "").trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ this.toast("That email doesn't look right"); return; }
+    if (this.cloud()){
+      const pass = (document.getElementById("acct-pass").value || "");
+      if (pass.length < 6){ this.toast("Password needs at least 6 characters"); return; }
+      const btn = document.getElementById("acct-submit");
+      btn.disabled = true; btn.textContent = "One sec…";
+      try {
+        const { data, error } = signup
+          ? await this.sb.auth.signUp({ email, password: pass })
+          : await this.sb.auth.signInWithPassword({ email, password: pass });
+        if (error) throw error;
+        if (signup && data && !data.session){
+          this.closeSheet();
+          this.toast("Check your email to confirm your account, then sign in");
+          return;
+        }
+        this.closeSheet(); this.hideAuth();
+        this.fetchUsage();
+        this.toast(signup ? "Account created ✓" : "Signed in ✓");
+        this.continuePendingPurchase();
+      } catch(err){
+        this.toast(String(err.message || err).slice(0, 90));
+        btn.disabled = false; btn.textContent = signup ? "Create account" : "Sign in";
+      }
+      return;
+    }
+    const nameEl = document.getElementById("acct-name");
+    this.account = { name: nameEl ? nameEl.value.trim() : "", email, created: Date.now() };
+    store.set("account", this.account);
+    store.set("authChoice", "account");
+    this.closeSheet(); this.hideAuth();
+    this.renderAccountCard();
+    this.refreshBanner();
+    this.toast(signup ? "Account created ✓" : "Signed in ✓");
+    this.continuePendingPurchase();
+  },
+  signOut(){
+    this.confirmSheet("Sign out?", "Your scans and settings stay on this device.", "Sign out", () => {
+      if (this.cloud()){ this.sb.auth.signOut(); this.toast("Signed out"); return; }
+      this.account = null; store.set("account", null);
+      store.set("authChoice", "guest");   // don't re-show the welcome gate on next launch
+      this.renderAccountCard(); this.refreshBanner();
+      this.toast("Signed out");
+    }, true);
+  },
+  refreshBanner(){
+    const b = document.getElementById("acct-banner");
+    if (!b) return;
+    // Two different things count as "has an account": the old local profile and
+    // a real Supabase session. Checking only the first meant anyone signed in
+    // properly was still nagged to create an account they already had.
+    const hasAccount = !!this.account || (this.authOn() && this.signedIn());
+    const show = !hasAccount && !store.get("bannerDismissed", false) && this.history.length >= 1;
+    b.style.display = show ? "block" : "none";
+  },
+  dismissBanner(){ store.set("bannerDismissed", true); this.refreshBanner(); },
+
+  /* ===== settings ===== */
+  provider(){ return (this.settings.model || "").startsWith("gemini") ? "gemini" : "claude"; },
+  refreshEngineHints(){
+    const sel = document.getElementById("set-model");
+    const fg = document.getElementById("field-gkey");
+    const fa = document.getElementById("field-akey");
+    if (!sel || !fg || !fa) return;           // server mode replaces this card
+    const isGem = sel.value.startsWith("gemini");
+    fg.style.opacity = isGem ? "1" : ".45";
+    fa.style.opacity = isGem ? ".45" : "1";
+  },
+  saveSettings(){
+    const val = id => { const el = document.getElementById(id); return el ? el.value.trim() : null; };
+    const k = val("set-key"), gk = val("set-gkey"), md = val("set-model"), ds = val("set-desmos");
+    if (k !== null) this.settings.key = k;
+    if (gk !== null) this.settings.gkey = gk;
+    if (md !== null) this.settings.model = md;
+    if (ds !== null) this.settings.desmosKey = ds;
+    store.set("settings", this.settings);
+    this.toast("Settings saved");
+  },
+  toggleKey(){
+    ["set-key","set-gkey"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.type = el.type === "password" ? "text" : "password";
+    });
+  },
+  async testKey(){
+    if (this.serverMode()){
+      const sbtn = document.getElementById("test-key-btn");
+      if (sbtn){ sbtn.textContent = "Testing…"; sbtn.disabled = true; }
+      try {
+        const r = await fetch(API_SERVER.replace(/\/+$/, ""), { method: "GET" });
+        const t = await r.text();
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        this.toast(t.indexOf("MISSING") !== -1
+          ? "✕ Server is up, but its GEMINI_API_KEY secret is missing"
+          : "✓ Connected — you're ready to scan");
+      } catch(err){
+        this.toast("✕ Can't reach the server — check the API_SERVER address");
+      }
+      if (sbtn){ sbtn.textContent = "Test connection"; sbtn.disabled = false; }
+      return;
+    }
+    const model = document.getElementById("set-model").value;
+    const isGem = model.startsWith("gemini");
+    const key = (document.getElementById(isGem ? "set-gkey" : "set-key").value || "").trim();
+    if (!key){
+      this.toast(isGem ? "Paste your free Google AI key first (aistudio.google.com → Get API key)" : "Paste your Anthropic key first");
+      return;
+    }
+    const btn = document.getElementById("test-key-btn");
+    btn.textContent = "Testing…"; btn.disabled = true;
+    try {
+      let r;
+      if (isGem){
+        r = await fetch(GEMINI_URL + encodeURIComponent(model) + ":generateContent", {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-goog-api-key": key },
+          body: JSON.stringify({ contents: [{ parts: [{ text: "Reply with exactly: OK" }] }], generationConfig: { maxOutputTokens: 200 } })
+        });
+      } else {
+        r = await fetch(API_URL, {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+          body: JSON.stringify({ model, max_tokens: 10, messages: [{ role: "user", content: "Reply with exactly: OK" }] })
+        });
+      }
+      if (!r.ok){
+        let m = "HTTP " + r.status;
+        try { const j = await r.json(); if (j.error && j.error.message) m += ": " + j.error.message; } catch(e){}
+        throw new Error(m);
+      }
+      this.toast("✓ Key works! Save settings and start scanning");
+    } catch(err){
+      this.toast("✕ " + this.friendlyError(err));
+    }
+    btn.textContent = "Test key"; btn.disabled = false;
+  },
+
+  /* ===== capture ===== */
+  openCamera(){ if (this.canScan()) document.getElementById("file-cam").click(); },
+  openUpload(){ if (this.canScan()) document.getElementById("file-up").click(); },
+  onFile(e){
+    const f = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!f) return;
+    if (this.cloud()){
+      if (!this.account){ this.maybeShowAuthCloud(); return; }
+      this.analyzeFile(f);
+      return;
+    }
+    if (!this.serverMode() && this.provider() === "gemini" && !this.settings.gkey){
+      this.toast("Add your FREE Google AI key in Settings first (takes 1 min)");
+      setTimeout(()=>this.nav("settings"), 900);
+      return;
+    }
+    if (!this.serverMode() && this.provider() === "claude" && !this.settings.key){
+      this.toast("Add your Anthropic API key in Settings first");
+      setTimeout(()=>this.nav("settings"), 700);
+      return;
+    }
+    this.analyzeFile(f);
+  },
+
+  async compressImage(file){
+    const dataUrl = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result); r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+    const img = await new Promise((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i); i.onerror = rej;
+      i.src = dataUrl;
+    });
+    const MAX = 1568;
+    let { width: w, height: h } = img;
+    const scale = Math.min(1, MAX / Math.max(w, h));
+    w = Math.round(w * scale); h = Math.round(h * scale);
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    c.getContext("2d").drawImage(img, 0, 0, w, h);
+    const out = c.toDataURL("image/jpeg", 0.85);
+    return { b64: out.split(",")[1], preview: out };
+  },
+
+  /* ===== processing overlay ===== */
+  procMsgs: ["Reading your question…","Identifying the topic…","Finding the fastest Desmos path…","Building your graph steps…","Double-checking the answer…"],
+  showProcessing(preview){
+    const p = document.getElementById("processing");
+    const t = document.getElementById("proc-thumb");
+    if (preview){ t.src = preview; t.style.display = "block"; } else t.style.display = "none";
+    p.classList.add("on");
+    let i = 0;
+    document.getElementById("proc-msg").textContent = this.procMsgs[0];
+    this.procTimer = setInterval(()=>{
+      i = (i + 1) % this.procMsgs.length;
+      document.getElementById("proc-msg").textContent = this.procMsgs[i];
+    }, 2600);
+  },
+  hideProcessing(){
+    clearInterval(this.procTimer);
+    document.getElementById("processing").classList.remove("on");
+  },
+
+  /* ===== AI call ===== */
+  async analyzeFile(file){
+    this.lastScanFile = file;
+    this.clearScanError();
+    let img;
+    try { img = await this.compressImage(file); }
+    catch(e){ this.toast("Couldn't read that image — try another photo"); return; }
+    this.showProcessing(img.preview);
+    const attempts = [0, 12000];   // immediate try, then one retry after 12s on busy/parse errors
+    let lastErr = null;
+    for (let a = 0; a < attempts.length; a++){
+      if (a > 0){
+        document.getElementById("proc-msg").textContent = "High demand right now — retrying…";
+        document.getElementById("proc-sub").textContent = "Hang tight, usually clears in seconds";
+        await new Promise(r => setTimeout(r, attempts[a]));
+      }
+      try {
+        const data = this.cloud()
+          ? await this.callBackend(img.b64)
+          : (this.provider() === "gemini" ? await this.callGemini(img.b64) : await this.callClaude(img.b64));
+        this.consumeScan();
+        this.hideProcessing();
+        this.showResult(data, true);
+        return;
+      } catch(err){
+        console.error(err);
+        lastErr = err;
+        if (err.limit || err.message === "limit"){
+          if (err.usage){ this.serverUsage = err.usage; this.refreshMeter(); }
+          break;
+        }
+        if (!this.isRetryable(err.message)) break;
+      }
+    }
+    this.hideProcessing();
+    document.getElementById("proc-sub").textContent = "This usually takes 5–15 seconds";
+    const m = String(lastErr && lastErr.message || "");
+    if (m === "limit"){
+      this.toast("You're out of free scans for today");
+      setTimeout(()=>this.nav("paywall"), 700);
+      return;
+    }
+    if (m.includes("401") && this.cloud()){ this.toast(this.friendlyError(lastErr)); this.maybeShowAuthCloud(); return; }
+    if (m.includes("401") || m.toLowerCase().includes("key")){
+      this.toast(this.friendlyError(lastErr));
+      setTimeout(()=>this.nav("settings"), 1100);
+      return;
+    }
+    this.showScanError(lastErr);
+  },
+
+  async callBackend(b64){
+    const j = await this.backendFetch({ image: b64 });
+    if (j.usage){ this.serverUsage = j.usage; }
+    return this.parseAIJson(j.result);
+  },
+
+  async callGemini(b64){
+    const model = this.settings.model || DEFAULT_MODEL;
+    const res = await fetch(GEMINI_URL + encodeURIComponent(model) + ":generateContent"
+        + (this.serverMode() ? "?d=" + encodeURIComponent(this.deviceId()) : ""), {
+      method: "POST",
+      headers: this.authHeaders({ "x-goog-api-key": this.settings.gkey || "" }),
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: this.serverMode() ? PROMPT_MARKER : FALLBACK_PROMPT }] },
+        contents: [{
+          role: "user",
+          parts: [
+            { inline_data: { mime_type: "image/jpeg", data: b64 } },
+            { text: "Here is the SAT question. Give me the fastest method as JSON." }
+          ]
+        }],
+        generationConfig: { maxOutputTokens: 32768, responseMimeType: "application/json" }
+      })
+    });
+    if (res.status === 402){
+      // the server says this device is out of free scans — it is the authority
+      try {
+        const j = await res.json();
+        if (j.usage){ this.usage = { d: this.today(), n: j.usage.used }; this.saveUsage(); }
+      } catch(e){}
+      this.refreshMeter();
+      const e = new Error("limit");
+      e.limit = true;
+      throw e;
+    }
+    if (!res.ok){
+      let msg = "HTTP " + res.status;
+      try { const j = await res.json(); if (j.error && j.error.message) msg += ": " + j.error.message; } catch(e){}
+      throw new Error(msg);
+    }
+    const proHdr = res.headers.get("x-ch-pro");
+    if (proHdr !== null) this.server = Object.assign({}, this.server, { pro: proHdr === "1" });
+    const usedHdr = res.headers.get("x-ch-used");
+    if (usedHdr !== null && !isNaN(+usedHdr)){
+      // trust the server's count over whatever this device thinks
+      this.usage = { d: this.today(), n: +usedHdr };
+      this.saveUsage();
+    }
+    const j = await res.json();
+    const cand = (j.candidates || [])[0];
+    const text = cand && cand.content && cand.content.parts
+      ? cand.content.parts.map(p => p.text || "").join("")
+      : "";
+    if (!text) throw new Error("Empty AI response — try again");
+    return this.parseAIJson(text);
+  },
+
+  async callClaude(b64){
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": this.settings.key,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: this.settings.model || "claude-sonnet-5",
+        max_tokens: 3000,
+        system: FALLBACK_PROMPT,
+        messages: [{
+          role: "user",
+          content: [
+            { type: "image", source: { type: "base64", media_type: "image/jpeg", data: b64 } },
+            { type: "text", text: "Here is the SAT question. Give me the fastest method as JSON." }
+          ]
+        }]
+      })
+    });
+    if (!res.ok){
+      let msg = "HTTP " + res.status;
+      try { const j = await res.json(); if (j.error && j.error.message) msg += ": " + j.error.message; } catch(e){}
+      throw new Error(msg);
+    }
+    const j = await res.json();
+    const text = (j.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
+    return this.parseAIJson(text);
+  },
+
+  repairJson(t){
+    // fix truncated / slightly-malformed JSON: trailing commas, unclosed strings, unbalanced brackets
+    let s = t.replace(/,\s*([}\]])/g, "$1");
+    const stack = [];
+    let inStr = false, esc = false;
+    for (const ch of s){
+      if (esc){ esc = false; continue; }
+      if (ch === "\\"){ esc = true; continue; }
+      if (ch === '"'){ inStr = !inStr; continue; }
+      if (!inStr){
+        if (ch === "{" || ch === "[") stack.push(ch);
+        else if (ch === "}" || ch === "]") stack.pop();
+      }
+    }
+    if (inStr) s += '"';
+    s = s.replace(/,\s*$/, "");
+    while (stack.length) s += stack.pop() === "{" ? "}" : "]";
+    return s;
+  },
+  parseAIJson(text){
+    let t = String(text).trim().replace(/^```(json)?/i, "").replace(/```$/, "").trim();
+    const a = t.indexOf("{");
+    if (a === -1) throw new Error("The AI response wasn't valid JSON — try again");
+    t = t.slice(a);
+    const b = t.lastIndexOf("}");
+    const candidates = [];
+    if (b !== -1) candidates.push(t.slice(0, b + 1));
+    candidates.push(this.repairJson(t));
+    let d = null;
+    for (const c of candidates){
+      try { d = JSON.parse(c); break; } catch(e){}
+    }
+    if (!d) throw new Error("The AI response wasn't valid JSON — try again");
+    if (!Array.isArray(d.steps)) d.steps = [];
+    d.steps.forEach(s => { if (!Array.isArray(s.desmos_entries)) s.desmos_entries = []; });
+    return d;
+  },
+  isRetryable(msg){
+    const m = String(msg || "");
+    if (m.includes("PerDay") || m.includes("daily")) return false;      // daily quota — retrying won't help
+    return m.includes("429") || m.includes("503") || m.includes("529") ||
+           m.includes("overloaded") || m.includes("RESOURCE_EXHAUSTED") ||
+           m.includes("UNAVAILABLE") || m.includes("Internal") || m.includes("wasn't valid JSON");
+  },
+
+  friendlyError(err){
+    const m = String(err.message || err);
+    if (m.includes("401") || m.includes("API key not valid") || m.includes("API_KEY_INVALID"))
+      return "Key rejected — re-copy it from aistudio.google.com (it starts with AIza)";
+    if (m.includes("403") || m.includes("PERMISSION_DENIED"))
+      return "Key lacks Gemini access — create it at aistudio.google.com, not Google Cloud";
+    if (m.includes("404"))
+      return "Model not found — switch to Gemini 2.5 Flash in Settings";
+    if (m.includes("RESOURCE_EXHAUSTED") || m.includes("quota"))
+      return "Free daily AI limit reached — try again tomorrow or switch models in Settings";
+    if (m.includes("429")) return "Rate limited — wait a few seconds and retry";
+    if (m.includes("529") || m.includes("overloaded") || m.includes("503")) return "The AI is busy — try again in a moment";
+    if (m.includes("Failed to fetch")) return "Network error — check your connection";
+    if (m.includes("JSON")) return "Couldn't parse the answer — please rescan";
+    return "Something went wrong: " + m.slice(0, 90);
+  },
+
+  /* ===== sample ===== */
+  runSample(){
+    this.showProcessing(null);
+    setTimeout(()=>{ this.hideProcessing(); this.showResult(JSON.parse(JSON.stringify(SAMPLE)), false); }, 1600);
+  },
+
+  /* ===== result rendering ===== */
+  esc(s){ return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); },
+
+  showResult(data, saveToHistory){
+    this.current = data;
+    this.activeStep = -1;
+    this.lastShot = null;
+    this.shareFile = null;
+    if (saveToHistory){
+      if (!this.history.length) this.ping("first_scan");
+      this.history.unshift({ id: Date.now(), ts: new Date().toISOString(), data, pinned: false });
+      const pinned = this.history.filter(r => r.pinned);
+      const rest = this.history.filter(r => !r.pinned).slice(0, 50);
+      this.history = pinned.concat(rest);   // pinned scans never age out
+      this.saveHistory();
+    }
+    const V = { desmos: { em:"⚡", b:"Desmos is the fastest way", cls:"desmos" },
+                hand:   { em:"✋", b:"Faster by hand — skip the calculator", cls:"hand" },
+                hybrid: { em:"🔀", b:"Best of both: quick setup + one Desmos move", cls:"hybrid" } };
+    const v = V[data.best_method] || V.desmos;
+    const mins = Math.max(1, Math.round((data.time_estimate_seconds || 60) / 60 * 10) / 10);
+    const timeLabel = (data.time_estimate_seconds || 60) < 60 ? "~" + data.time_estimate_seconds + " sec" : "~" + mins + " min";
+
+    document.getElementById("result-body").innerHTML =
+      '<div class="verdict ' + v.cls + '"><span class="em">' + v.em + '</span><span><b>' + v.b + '</b>' +
+      '<span class="math">' + this.esc(data.why_method || "") + '</span></span></div>' +
+      '<div class="chips">' +
+        '<span class="chip">' + this.esc(data.topic || "Math") + '</span>' +
+        '<span class="chip">' + this.esc(data.difficulty || "medium") + '</span>' +
+        '<span class="chip hl">⏱ ' + timeLabel + '</span>' +
+      '</div>' +
+      '<div class="card qcard"><div class="lbl">The question</div><p class="math">' + this.esc(data.question_text || "") + '</p></div>';
+
+    /* graph */
+    const hasGraph = data.steps.some(s => s.desmos_entries.length > 0);
+    document.getElementById("graph-anchor").innerHTML = hasGraph
+      ? '<div id="graph-wrap" style="display:block"><div id="graph-head"><span>Live Desmos graph</span><span id="graph-step-ind">Tap a step ↓</span></div><div id="calculator"></div></div>'
+      : "";
+
+    /* steps */
+    let stepsHtml = "";
+    if (data.steps.length){
+      stepsHtml = '<div class="lbl" style="margin-top:18px">Step-by-step</div>';
+      data.steps.forEach((s, i) => {
+        let entries = "";
+        s.desmos_entries.forEach((e, j) => {
+          entries += '<div class="type-chip"><span style="flex:1"><span class="kbd">' + this.esc(e.latex) + '</span>' +
+                     (e.note ? '<span class="note">' + this.esc(e.note) + '</span>' : "") + '</span>' +
+                     '<button class="copy-btn" onclick="App.copyEntry(event,' + i + ',' + j + ')">copy</button></div>';
+        });
+        /* per-step Desmos preview: mocked expression panel + rendered graph snapshot */
+        let preview = "";
+        if (s.desmos_entries.length){
+          preview =
+            '<div class="dz-lbl">How it looks in Desmos</div>' +
+            '<div class="dz-window">' +
+              '<div class="dz-panel"><div class="dz-panel-head">Expressions</div>' + this.panelRows(data.steps, i) + '</div>' +
+              '<div class="dz-graph" id="shot-' + i + '"><div class="shot-loading"><span class="sp"></span>Drawing graph…</div></div>' +
+            '</div>' +
+            (s.what_you_see
+              ? '<div class="see-note"><span class="eye">👀</span><span class="math"><b>You should see:</b> ' + this.esc(s.what_you_see) + '</span></div>'
+              : "");
+        } else if (s.what_you_see){
+          preview = '<div class="see-note"><span class="eye">👀</span><span class="math">' + this.esc(s.what_you_see) + '</span></div>';
+        }
+        stepsHtml +=
+          '<div class="step" id="step-' + i + '"><div class="step-head" onclick="App.selectStep(' + i + ')">' +
+          '<div class="step-num">' + (i+1) + '</div><div class="step-title">' + this.esc(s.title || ("Step " + (i+1))) + '</div>' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b93b0" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></div>' +
+          '<div class="step-body"><p class="step-inst math">' + this.esc(s.instruction || "") + '</p>' + entries + preview + '</div></div>';
+      });
+    }
+    document.getElementById("steps-anchor").innerHTML = stepsHtml;
+
+    /* answer + trap + hand */
+    let bottom =
+      '<div class="answer-card' + (this.settings.hideAnswer === false ? " revealed" : "") +
+        '" onclick="this.classList.add(\'revealed\')">' +
+      '<div class="lbl" style="color:var(--accent)">Answer</div>' +
+      '<div class="val math">' + this.esc(data.answer || "—") + '</div>' +
+      '<div class="exp math">' + this.esc(data.answer_explanation || "") + '</div>' +
+      (this.settings.hideAnswer === false ? "" :
+        '<div class="hint">Tap to reveal — try the steps first!</div>') + '</div>';
+    if (data.common_trap)
+      bottom += '<div class="card trap-card"><div class="lbl">⚠️ Common trap</div><p class="math">' + this.esc(data.common_trap) + '</p></div>';
+    if (data.hand_method_summary)
+      bottom += '<div class="card hand-card"><div class="lbl">' + (data.best_method === "desmos" ? "The algebra way (if you prefer)" : "Quick hand method") + '</div><p class="math">' + this.esc(data.hand_method_summary) + '</p></div>';
+    document.getElementById("answer-anchor").innerHTML = bottom;
+
+    this.nav("result");
+    this.renderMath(document.getElementById("view-result"));
+    if (hasGraph){
+      this.ensureDesmos(() => {
+        if (data.steps.length) this.selectStep(0);
+        this.generateStepShots().then(() => this.prepShareCard());
+      }, () => this.graphFallback());
+    } else if (data.steps.length){
+      this.selectStep(0);
+      this.prepShareCard();
+    } else {
+      this.prepShareCard();
+    }
+  },
+
+  copyEntry(ev, i, j){
+    ev.stopPropagation();
+    try {
+      const raw = this.current.steps[i].desmos_entries[j].latex;
+      navigator.clipboard.writeText(raw);
+      this.toast("Copied — paste it into Desmos");
+    } catch(e){ this.toast("Copy not available here"); }
+  },
+
+  selectStep(i){
+    if (!this.current) return;
+    this.activeStep = i;
+    this.current.steps.forEach((s, j) => {
+      const el = document.getElementById("step-" + j);
+      if (!el) return;
+      el.classList.toggle("active", j === i);
+      el.classList.toggle("done", j < i);
+    });
+    const ind = document.getElementById("graph-step-ind");
+    if (ind) ind.textContent = "Step " + (i+1) + " of " + this.current.steps.length;
+    this.applyGraph(i);
+  },
+
+  /* ===== Desmos ===== */
+  ensureDesmos(onReady, onFail){
+    if (window.Desmos){ this.initCalc(); onReady(); return; }
+    if (this.desmosLoading) return;
+    this.desmosLoading = true;
+    const key = this.settings.desmosKey || DESMOS_DEMO_KEY;
+    const s = document.createElement("script");
+    s.src = "https://www.desmos.com/api/v1.12/calculator.js?apiKey=" + encodeURIComponent(key);
+    s.onload = () => { this.desmosLoading = false; this.initCalc(); onReady(); };
+    s.onerror = () => { this.desmosLoading = false; if (onFail) onFail(); };
+    document.head.appendChild(s);
+  },
+  initCalc(){
+    const el = document.getElementById("calculator");
+    if (!el || !window.Desmos) return;
+    // container is re-created per result, so destroy any stale instance and make a fresh one
+    if (this.calc){ try { this.calc.destroy(); } catch(e){} this.calc = null; }
+    this.calc = Desmos.GraphingCalculator(el, {
+      expressions: true, keypad: false, settingsMenu: false,
+      zoomButtons: true, border: false, expressionsCollapsed: false,
+      fontSize: 13, invertedColors: false
+    });
+  },
+  applyTo(calc, uptoStep){
+    calc.setBlank();
+    let colorIdx = 0, viewport = null;
+    for (let i = 0; i <= uptoStep && i < this.current.steps.length; i++){
+      const st = this.current.steps[i];
+      (st.desmos_entries || []).forEach((e, j) => {
+        calc.setExpression({ id: "s"+i+"e"+j, latex: e.latex, color: GRAPH_COLORS[colorIdx++ % GRAPH_COLORS.length] });
+      });
+      if (st.viewport) viewport = st.viewport;
+    }
+    if (viewport && viewport.xmin != null){
+      calc.setMathBounds({ left: viewport.xmin, right: viewport.xmax, bottom: viewport.ymin, top: viewport.ymax });
+    } else {
+      calc.setMathBounds({ left: -10, right: 10, bottom: -7, top: 7 });
+    }
+  },
+  applyGraph(uptoStep){
+    if (!this.calc || !this.current) return;
+    try { this.applyTo(this.calc, uptoStep); } catch(e){ console.warn("Desmos apply failed", e); }
+  },
+
+  /* mocked Desmos expression panel — shows the list exactly as it looks after step i */
+  entryIcon(latex, color){
+    const t = String(latex || "").trim();
+    if (/^\(/.test(t) && t.includes(","))
+      return '<svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="4" fill="' + color + '"/></svg>';
+    if (/^[\d\s.+\-*/^()]+$/.test(t))
+      return '<svg width="14" height="14" viewBox="0 0 14 14"><text x="7" y="11" text-anchor="middle" font-size="11" fill="#9aa0ad" font-family="monospace">=</text></svg>';
+    return '<svg width="14" height="14" viewBox="0 0 14 14"><path d="M1 11 Q4 1 7 7 T13 3" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round"/></svg>';
+  },
+  panelRows(steps, uptoStep){
+    let rows = "", n = 0, colorIdx = 0;
+    for (let i = 0; i <= uptoStep; i++){
+      (steps[i].desmos_entries || []).forEach(e => {
+        n++;
+        const color = GRAPH_COLORS[colorIdx++ % GRAPH_COLORS.length];
+        rows += '<div class="dz-row' + (i === uptoStep ? ' new' : '') + '">' +
+                '<span class="dz-idx">' + n + '</span>' +
+                '<span class="dz-ic">' + this.entryIcon(e.latex, color) + '</span>' +
+                '<span class="dz-ex math">$' + this.esc(e.latex) + '$</span></div>';
+      });
+    }
+    return rows || '<div class="dz-row"><span class="dz-ex" style="color:#9aa0ad;font-size:11px">empty graph</span></div>';
+  },
+
+  /* static graph snapshots, one per step, rendered by a hidden Desmos instance */
+  shotCalc: null,
+  async generateStepShots(){
+    if (!window.Desmos || !this.current) return;
+    if (!this.shotCalc){
+      const d = document.createElement("div");
+      d.style.cssText = "position:absolute;left:-10000px;top:0;width:480px;height:300px;";
+      document.body.appendChild(d);
+      this.shotCalc = Desmos.GraphingCalculator(d, { expressions: false, keypad: false, settingsMenu: false, zoomButtons: false, border: false });
+    }
+    const token = this.current;
+    for (let i = 0; i < token.steps.length; i++){
+      if (!token.steps[i].desmos_entries.length) continue;
+      try { this.applyTo(this.shotCalc, i); } catch(e){ continue; }
+      const uri = await new Promise(res => {
+        try { this.shotCalc.asyncScreenshot({ width: 480, height: 300, targetPixelRatio: 2 }, res); }
+        catch(e){ try { res(this.shotCalc.screenshot({ width: 480, height: 300, targetPixelRatio: 2 })); } catch(e2){ res(null); } }
+      });
+      if (token !== this.current) return;   // user opened a different result mid-render
+      if (uri) this.lastShot = uri;          // keep the latest for the share card
+      const h = document.getElementById("shot-" + i);
+      if (!h) continue;
+      h.innerHTML = uri
+        ? '<img src="' + uri + '" alt="Desmos graph after step ' + (i+1) + '">'
+        : '<div class="shot-loading">Preview unavailable</div>';
+    }
+  },
+  shotsFail(){
+    document.querySelectorAll(".dz-graph .shot-loading").forEach(el => {
+      el.innerHTML = "Graph preview unavailable offline — the expression list on the left shows what to type";
+    });
+  },
+  graphFallback(){
+    const w = document.getElementById("graph-wrap");
+    if (w) w.innerHTML = '<div class="graph-fallback">Live graph unavailable (Desmos couldn\'t load). Follow the "type this" chips below in your own Desmos or the Bluebook calculator.</div>';
+    this.shotsFail();
+  },
+
+
+  /* ===== shareable card =====
+     Turns a walkthrough into an image. Sharing a useful trick costs nothing
+     socially; asking someone to try your app costs a favour. This is the
+     former. The card is built as soon as a result renders, because iOS only
+     allows navigator.share() to run straight off a tap. */
+  lastShot: null,
+  shareFile: null,
+
+  rrect(x, rx, ry, w, h, r){
+    x.beginPath();
+    x.moveTo(rx + r, ry);
+    x.arcTo(rx + w, ry, rx + w, ry + h, r);
+    x.arcTo(rx + w, ry + h, rx, ry + h, r);
+    x.arcTo(rx, ry + h, rx, ry, r);
+    x.arcTo(rx, ry, rx + w, ry, r);
+    x.closePath();
+  },
+  wrap(ctx, text, maxW, maxLines){
+    const words = String(text || "").replace(/\$/g, "").split(/\s+/);
+    const lines = [];
+    let line = "";
+    for (const w of words){
+      const t = line ? line + " " + w : w;
+      if (ctx.measureText(t).width > maxW && line){
+        lines.push(line); line = w;
+        if (lines.length === maxLines - 1 && words.indexOf(w) < words.length - 1){
+          // last allowed line: let the loop fill it, then trim below
+        }
+      } else line = t;
+    }
+    if (line) lines.push(line);
+    if (lines.length > maxLines){
+      lines.length = maxLines;
+      lines[maxLines - 1] = lines[maxLines - 1].replace(/\s*\S*$/, "") + "…";
+    }
+    return lines;
+  },
+
+  async buildShareCard(){
+    const d = this.current;
+    if (!d) return null;
+    const W = 1080, H = 1350, M = 76;
+    const c = document.createElement("canvas");
+    c.width = W; c.height = H;
+    const x = c.getContext("2d");
+    const SANS = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+    const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+
+    // ground
+    const g = x.createLinearGradient(0, 0, W * 0.7, H);
+    g.addColorStop(0, "#151a33"); g.addColorStop(1, "#080b16");
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+
+    // wordmark
+    const ig = x.createLinearGradient(M, 74, M + 68, 142);
+    ig.addColorStop(0, "#7c5cff"); ig.addColorStop(1, "#2fe6a8");
+    x.fillStyle = ig; this.rrect(x, M, 74, 68, 68, 18); x.fill();
+    x.strokeStyle = "#fff"; x.lineWidth = 5; x.lineCap = "round";
+    x.beginPath(); x.moveTo(M + 13, 123); x.quadraticCurveTo(M + 34, 80, M + 55, 123); x.stroke();
+    x.fillStyle = "#ffe14d";
+    x.beginPath();
+    x.moveTo(M + 39, 91); x.lineTo(M + 28, 110); x.lineTo(M + 36, 110);
+    x.lineTo(M + 31, 131); x.lineTo(M + 46, 106); x.lineTo(M + 38, 106);
+    x.closePath(); x.fill();
+    x.fillStyle = "#eef1fb"; x.font = "800 44px " + SANS; x.textBaseline = "alphabetic";
+    x.fillText("CalcHack", M + 88, 122);
+    x.fillStyle = "#8b93b0"; x.font = "600 24px " + SANS;
+    x.fillText("SAT MATH", W - M - x.measureText("SAT MATH").width, 118);
+
+    let y = 196;
+
+    // verdict pill
+    const m = d.best_method || "desmos";
+    const V = { desmos: ["#2fe6a8", "rgba(47,230,168,.14)", "FASTEST IN DESMOS"],
+                hand:   ["#ffb020", "rgba(255,176,32,.14)", "FASTER BY HAND"],
+                hybrid: ["#a99bff", "rgba(124,92,255,.18)", "QUICK SETUP + DESMOS"] }[m] || null;
+    if (V){
+      const secs = d.time_estimate_seconds;
+      const label = V[2] + (secs ? "   ·   ~" + (secs < 60 ? secs + " SEC" : Math.round(secs/60) + " MIN") : "");
+      x.font = "700 26px " + SANS;
+      const pw = x.measureText(label).width + 56;
+      x.fillStyle = V[1]; this.rrect(x, M, y, pw, 58, 29); x.fill();
+      x.fillStyle = V[0]; x.fillText(label, M + 28, y + 38);
+      y += 92;
+    }
+
+    // question
+    x.fillStyle = "#eef1fb"; x.font = "600 40px " + SANS;
+    const qLines = this.wrap(x, d.question_text, W - M*2, 4);
+    qLines.forEach(l => { x.fillText(l, M, y + 34); y += 54; });
+    y += 30;
+
+    // graph
+    if (this.lastShot){
+      const img = await new Promise(res => {
+        const i = new Image();
+        i.onload = () => res(i); i.onerror = () => res(null);
+        i.src = this.lastShot;
+      });
+      if (img){
+        const gh = 340, gw = W - M*2;
+        x.save(); this.rrect(x, M, y, gw, gh, 20); x.clip();
+        x.fillStyle = "#fff"; x.fillRect(M, y, gw, gh);
+        const scale = Math.max(gw / img.width, gh / img.height);
+        const dw = img.width * scale, dh = img.height * scale;
+        x.drawImage(img, M + (gw - dw)/2, y + (gh - dh)/2, dw, dh);
+        x.restore();
+        x.strokeStyle = "#2a3560"; x.lineWidth = 2;
+        this.rrect(x, M, y, gw, gh, 20); x.stroke();
+        y += gh + 40;
+      }
+    }
+
+    // what to type
+    const entries = [];
+    (d.steps || []).forEach(s => (s.desmos_entries || []).forEach(e => entries.push(e.latex)));
+    if (entries.length){
+      x.fillStyle = "#8b93b0"; x.font = "700 24px " + SANS;
+      x.fillText("TYPE THIS IN DESMOS", M, y + 22);
+      y += 52;
+      for (const latex of entries.slice(0, 3)){
+        if (y + 86 > H - 268) break;
+        x.fillStyle = "#0d1222"; this.rrect(x, M, y, W - M*2, 72, 14); x.fill();
+        x.strokeStyle = "#2a3560"; x.lineWidth = 2; this.rrect(x, M, y, W - M*2, 72, 14); x.stroke();
+        x.fillStyle = "#2fe6a8"; x.font = "500 32px " + MONO;
+        const t = this.wrap(x, latex, W - M*2 - 56, 1)[0] || "";
+        x.fillText(t, M + 28, y + 47);
+        y += 86;
+      }
+      y += 12;
+    }
+
+    // answer
+    if (d.answer){
+      const ay = Math.min(y, H - 248);
+      x.fillStyle = "rgba(47,230,168,.09)"; this.rrect(x, M, ay, W - M*2, 118, 18); x.fill();
+      x.strokeStyle = "rgba(47,230,168,.4)"; x.lineWidth = 2;
+      this.rrect(x, M, ay, W - M*2, 118, 18); x.stroke();
+      x.fillStyle = "#8b93b0"; x.font = "700 22px " + SANS;
+      x.fillText("ANSWER", M + 28, ay + 42);
+      x.fillStyle = "#2fe6a8"; x.font = "800 48px " + SANS;
+      x.fillText(this.wrap(x, d.answer, W - M*2 - 56, 1)[0] || "", M + 28, ay + 94);
+    }
+
+    // footer
+    const host = (location.protocol.indexOf("http") === 0 && location.host) ? location.host : "CalcHack";
+    x.fillStyle = "#5a6280"; x.font = "600 26px " + SANS;
+    x.fillText("Scan any SAT question  ·  free, no signup", M, H - 78);
+    x.fillStyle = "#8b93b0"; x.font = "700 30px " + SANS;
+    x.fillText(host, M, H - 36);
+    return c;
+  },
+
+  async prepShareCard(){
+    this.shareFile = null;
+    try {
+      const c = await this.buildShareCard();
+      if (!c) return;
+      const blob = await new Promise(r => c.toBlob(r, "image/png"));
+      if (!blob) return;
+      this.shareFile = new File([blob], "calchack.png", { type: "image/png" });
+    } catch(e){ console.warn("share card failed", e); }
+  },
+
+  async shareResult(){
+    const btn = document.getElementById("share-btn");
+    if (btn) btn.disabled = true;
+    try {
+      if (!this.shareFile) await this.prepShareCard();
+      const f = this.shareFile;
+      if (!f) throw new Error("no card");
+      if (navigator.canShare && navigator.canShare({ files: [f] })){
+        await navigator.share({ files: [f] });
+      } else {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(f);
+        a.download = "calchack.png";
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        this.toast("Saved — post it or send it to someone");
+      }
+    } catch(err){
+      if (!/AbortError|canceled|cancelled/i.test(String(err))) this.toast("Couldn't build the image");
+    }
+    if (btn) btn.disabled = false;
+  },
+
+
+  /* ===== reporting a bad answer =====
+     The single most valuable button in the app. An AI that reads photos will
+     sometimes be wrong; the difference between a tool people trust and one
+     they quietly abandon is whether being wrong is visible and fixable. Every
+     report also becomes a row in the eval set. */
+  reportKind: "",
+  openReport(){
+    const d = this.current;
+    if (!d){ this.toast("Open a walkthrough first"); return; }
+    this.reportKind = "";
+    this.openSheet(
+      '<div class="sheet-title">Something off with this?</div>' +
+      '<p class="sheet-sub">Tell me what went wrong and I\'ll use it to make CalcHack better. Takes five seconds and you don\'t need an account.</p>' +
+      '<div class="rep-opts">' +
+        '<button class="rep-opt" id="rep-wrong" onclick="App.pickReport(\'wrong\')">The answer is wrong<i>The final answer doesn\'t match the real one</i></button>' +
+        '<button class="rep-opt" id="rep-misread" onclick="App.pickReport(\'misread\')">It misread the question<i>Wrong numbers, missing part, or read the wrong problem</i></button>' +
+        '<button class="rep-opt" id="rep-slow" onclick="App.pickReport(\'slow\')">There\'s a faster way<i>The method works but it isn\'t the quickest</i></button>' +
+        '<button class="rep-opt" id="rep-other" onclick="App.pickReport(\'other\')">Something else<i>Steps unclear, graph wrong, anything else</i></button>' +
+      '</div>' +
+      '<div class="field" style="margin-top:14px"><label>Anything to add? (optional)</label>' +
+        '<input id="rep-note" type="text" placeholder="The answer should have been 8" maxlength="300"></div>' +
+      '<button class="big-cta" id="rep-send" onclick="App.sendReport()" disabled>Send report</button>' +
+      '<button class="big-cta ghost" onclick="App.closeSheet()">Never mind</button>'
+    );
+  },
+  pickReport(kind){
+    this.reportKind = kind;
+    ["wrong","misread","slow","other"].forEach(k => {
+      const b = document.getElementById("rep-" + k);
+      if (b) b.classList.toggle("on", k === kind);
+    });
+    const send = document.getElementById("rep-send");
+    if (send) send.disabled = false;
+  },
+  async sendReport(){
+    const d = this.current;
+    if (!d || !this.reportKind) return;
+    const btn = document.getElementById("rep-send");
+    const noteEl = document.getElementById("rep-note");
+    const note = noteEl ? (noteEl.value || "").trim() : "";
+    if (btn){ btn.disabled = true; btn.textContent = "Sending…"; }
+    // Stored locally too, so a report is never lost to a flaky connection.
+    const local = store.get("reports", []);
+    local.unshift({ at: Date.now(), kind: this.reportKind, note: note, q: (d.question_text || "").slice(0, 200) });
+    store.set("reports", local.slice(0, 40));
+    try {
+      if (!this.serverMode()) throw new Error("offline");
+      const r = await fetch(API_SERVER.replace(/\/+$/, "") + "/report", {
+        method: "POST",
+        headers: this.authHeaders(),
+        body: JSON.stringify({
+          kind: this.reportKind, note: note,
+          question: d.question_text || "", answer: d.answer || "",
+          topic: d.topic || "", method: d.best_method || "",
+        }),
+      });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+    } catch(e){ /* the local copy is enough — never make someone retry feedback */ }
+    this.closeSheet();
+    this.toast("Thank you — that genuinely helps 🙏");
+  },
+
+  /* ===== a scan that failed, said properly =====
+     A toast disappears in three seconds and leaves someone staring at a screen
+     that looks like nothing happened. This stays until it's dealt with. */
+  lastScanFile: null,
+  showScanError(err){
+    const m = String((err && err.message) || err || "");
+    let title = "That didn't work";
+    let body = this.friendlyError(err);
+    let retry = true;
+    let capacity = false;
+    // Order matters: a blown daily quota also mentions RESOURCE_EXHAUSTED, so it
+    // has to be tested before the plain rate-limit case or it never matches.
+    if (m.includes("quota") || m.includes("daily limit") || m.includes("RESOURCE_EXHAUSTED")){
+      title = "CalcHack is over capacity today";
+      body = "More people turned up than the free AI tier allows — that's my limit, not yours. It resets overnight.";
+      retry = false;
+      capacity = true;
+    } else if (m.includes("503") || m.includes("529") || m.includes("overloaded")){
+      title = "The AI is overloaded right now";
+      body = "This is on Google's end, not yours or mine. It usually clears within a minute or two.";
+    } else if (m.includes("429")){
+      title = "Too many scans at once";
+      body = "Give it about a minute and try again.";
+    } else if (m.includes("Failed to fetch") || m.includes("NetworkError")){
+      title = "Can't reach the server";
+      body = "Check your connection and try again. Nothing was used from your scan count.";
+    } else if (m.includes("JSON") || m.includes("parse")){
+      title = "The answer came back garbled";
+      body = "Rare, and usually fixed by scanning again. A clearer photo helps too.";
+    }
+    const t = document.getElementById("err-title");
+    const b = document.getElementById("err-body");
+    const r = document.getElementById("err-retry");
+    const box = document.getElementById("scan-error");
+    if (t) t.textContent = title;
+    if (b) b.textContent = body;
+    if (r) r.style.display = retry && this.lastScanFile ? "" : "none";
+    const w = document.getElementById("err-wait");
+    if (w) w.style.display = capacity ? "" : "none";
+    if (box) box.classList.add("on");
+    this.nav("home");
+  },
+  offerWaitlist(){
+    this.openSheet(
+      '<div class="sheet-title">CalcHack is over capacity today</div>' +
+      '<p class="sheet-sub">More people turned up than the free AI tier allows. It resets overnight. ' +
+      'Leave your email and I\'ll tell you the moment it\'s back — one message, nothing else.</p>' +
+      '<div class="field"><label>Email</label><input id="wl-email" type="email" placeholder="you@school.edu" autocomplete="email"></div>' +
+      '<button class="big-cta" id="wl-btn" onclick="App.joinWaitlist()">Tell me when it\'s back</button>' +
+      '<button class="big-cta ghost" onclick="App.closeSheet()">No thanks</button>'
+    );
+  },
+  async joinWaitlist(){
+    const el = document.getElementById("wl-email");
+    const email = el ? (el.value || "").trim() : "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ this.toast("That email doesn't look right"); return; }
+    const btn = document.getElementById("wl-btn");
+    if (btn){ btn.disabled = true; btn.textContent = "Saving…"; }
+    try {
+      await fetch(API_SERVER.replace(/\/+$/, "") + "/waitlist", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+    } catch(e){}
+    this.closeSheet();
+    this.toast("Got it — you'll hear from me");
+  },
+
+  clearScanError(){
+    const box = document.getElementById("scan-error");
+    if (box) box.classList.remove("on");
+  },
+  retryLastScan(){
+    const f = this.lastScanFile;
+    this.clearScanError();
+    if (f) this.analyzeFile(f);
+  },
+
+  /* ===== deleting an account for real =====
+     The privacy policy promises this, so it has to do what it says: wipe the
+     server record, cancel any live subscription, and remove the login. */
+  confirmDeleteAccount(){
+    if (!this.signedIn()){ this.toast("You're not signed in"); return; }
+    this.confirmSheet(
+      "Delete your account?",
+      "This erases your account, your synced scan history and any Pro membership — and cancels your subscription so you're never billed again. <b>It cannot be undone.</b>",
+      "Delete everything",
+      () => this.deleteAccount(),
+      true
+    );
+  },
+  async deleteAccount(){
+    this.openSheet('<div class="sheet-title">Deleting…</div><p class="sheet-sub">Removing your data and cancelling any subscription.</p>');
+    try {
+      const r = await fetch(API_SERVER.replace(/\/+$/, "") + "/account/delete", {
+        method: "POST", headers: this.authHeaders(),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error((j.error && j.error.message) || "HTTP " + r.status);
+      try { await this.sb.auth.signOut(); } catch(e){}
+      this.session = null; this.server = null;
+      this.history = []; this.saveHistory();
+      this.renderAccountCard(); this.refreshMeter(); this.renderSubCard();
+      this.openSheet(
+        '<div class="sheet-title">Account deleted</div>' +
+        '<p class="sheet-sub">' + (j.authDeleted
+          ? "Everything is gone. Thanks for trying CalcHack."
+          : "Your data and any subscription are gone. The login record itself is removed within seven days — email support@calchack.net if you want it sooner.") + '</p>' +
+        '<button class="big-cta" onclick="App.closeSheet();App.nav(\'home\')">Done</button>'
+      );
+    } catch(err){
+      this.openSheet(
+        '<div class="sheet-title">Couldn\'t delete it</div>' +
+        '<p class="sheet-sub">' + this.esc(String(err.message || err).slice(0, 120)) +
+        '<br><br>Email <b>support@calchack.net</b> and it will be done by hand within seven days.</p>' +
+        '<button class="big-cta ghost" onclick="App.closeSheet()">OK</button>'
+      );
+    }
+  },
+
+  /* ===== scan history that follows you between devices =====
+     History used to live only in one browser, which made an account feel
+     pointless and made "full scan history" on the paywall a bit of a lie. */
+  _syncTimer: null,
+  cloudSyncOn(){ return !!(this.serverMode() && this.signedIn()); },
+
+  async pullHistory(){
+    if (!this.cloudSyncOn()) return;
+    try {
+      const r = await fetch(API_SERVER.replace(/\/+$/, "") + "/history", { headers: this.authHeaders() });
+      if (!r.ok) return;
+      const j = await r.json();
+      const remote = Array.isArray(j.items) ? j.items : [];
+      if (!remote.length && !this.history.length) return;
+      // Merge on id, newest first. A scan made offline on this device survives,
+      // and one made on another device arrives — neither side wins outright.
+      const byId = new Map();
+      remote.concat(this.history).forEach(rec => {
+        if (!rec || !rec.id || !rec.data) return;
+        const prev = byId.get(rec.id);
+        if (!prev || (rec.pinned && !prev.pinned)) byId.set(rec.id, rec);
+      });
+      const merged = Array.from(byId.values()).sort((a, b) => b.id - a.id);
+      const pinned = merged.filter(r2 => r2.pinned);
+      const rest = merged.filter(r2 => !r2.pinned).slice(0, 50);
+      this.history = pinned.concat(rest);
+      store.set("history", this.history);
+      this.renderHistory(); this.renderRecent(); this.renderHomeChips(); this.renderTopics();
+      if (merged.length !== remote.length) this.pushHistory();
+    } catch(e){}
+  },
+  pushHistory(){
+    if (!this.cloudSyncOn()) return;
+    clearTimeout(this._syncTimer);
+    // Debounced: pinning three scans in a row shouldn't be three uploads.
+    this._syncTimer = setTimeout(async () => {
+      try {
+        await fetch(API_SERVER.replace(/\/+$/, "") + "/history", {
+          method: "PUT",
+          headers: this.authHeaders(),
+          body: JSON.stringify({ items: this.history.slice(0, 60) }),
+        });
+      } catch(e){}
+    }, 1500);
+  },
+
+  /* ===== what this student keeps getting stuck on =====
+     Counting topics turns a lookup tool into something that knows you, which
+     is the difference between a bookmark and a habit. */
+  topicCounts(){
+    const counts = {};
+    this.history.forEach(rec => {
+      const t = rec && rec.data && rec.data.topic;
+      if (!t) return;
+      const k = String(t).trim().slice(0, 40);
+      if (k) counts[k] = (counts[k] || 0) + 1;
+    });
+    return Object.keys(counts)
+      .map(k => ({ topic: k, n: counts[k] }))
+      .sort((a, b) => b.n - a.n);
+  },
+  renderTopics(){
+    const el = document.getElementById("topics-card");
+    if (!el) return;
+    const list = this.topicCounts().filter(t => t.n >= 2).slice(0, 5);
+    // Below four scans there's no pattern to see, only noise.
+    if (this.history.length < 4 || !list.length){ el.style.display = "none"; return; }
+    const top = list[0];
+    const max = top.n;
+    el.style.display = "block";
+    el.innerHTML =
+      '<div class="lbl">What you keep scanning</div>' +
+      '<p class="tp-lede">Most of your questions lately are <b>' + this.esc(top.topic) + '</b>. ' +
+      'That\'s usually the topic worth an hour of practice.</p>' +
+      '<div class="tp-list">' +
+      list.map(t =>
+        '<div class="tp-row"><span class="tp-name">' + this.esc(t.topic) + '</span>' +
+        '<span class="tp-bar"><i style="width:' + Math.round(t.n / max * 100) + '%"></i></span>' +
+        '<span class="tp-n">' + t.n + '</span></div>'
+      ).join("") +
+      '</div>' +
+      '<a class="tp-practice" target="_blank" rel="noopener" href="' + this.practiceUrl(top.topic) + '">' +
+      'Free ' + this.esc(top.topic.toLowerCase()) + ' practice on Khan Academy \u2192</a>';
+  },
+
+
+  /* ===== add to home screen =====
+     A bookmark gets opened once. An icon on the home screen gets opened the
+     night before a test, which is the whole difference for a study tool. */
+  _installEvt: null,
+  initInstall(){
+    try {
+      addEventListener("beforeinstallprompt", e => { e.preventDefault(); this._installEvt = e; });
+      addEventListener("appinstalled", () => { this.ping("installed"); store.set("installed", true); });
+    } catch(e){}
+  },
+  standalone(){
+    try {
+      return matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+    } catch(e){ return false; }
+  },
+  maybeOfferInstall(){
+    if (this.standalone() || store.get("installDismissed", false) || store.get("installed", false)) return;
+    if (this.history.length < 2) return;            // earn it first
+    if (this.isDesktop()) return;
+    const el = document.getElementById("install-card");
+    if (el) el.style.display = "block";
+  },
+  async doInstall(){
+    if (this._installEvt){
+      this._installEvt.prompt();
+      try { await this._installEvt.userChoice; } catch(e){}
+      this._installEvt = null;
+      this.dismissInstall();
+      return;
+    }
+    // iOS gives no install API at all, so the honest answer is instructions.
+    this.openSheet(
+      '<div class="sheet-title">Add CalcHack to your home screen</div>' +
+      '<p class="sheet-sub">It opens like an app, works full screen, and it\'s there when you need it the night before a test.</p>' +
+      '<div class="ios-steps">' +
+        '<div><b>1</b><span>Tap the <b>Share</b> button at the bottom of Safari <span style="opacity:.7">(the square with an arrow)</span></span></div>' +
+        '<div><b>2</b><span>Scroll down and tap <b>Add to Home Screen</b></span></div>' +
+        '<div><b>3</b><span>Tap <b>Add</b>. Done.</span></div>' +
+      '</div>' +
+      '<button class="big-cta" onclick="App.closeSheet();App.dismissInstall()">Got it</button>'
+    );
+  },
+  dismissInstall(){
+    store.set("installDismissed", true);
+    const el = document.getElementById("install-card");
+    if (el) el.style.display = "none";
+  },
+
+  /* ===== aggregate pings =====
+     Counted as totals on the server. Nothing identifying goes with them. */
+  ping(name){
+    if (!this.serverMode()) return;
+    try {
+      fetch(API_SERVER.replace(/\/+$/, "") + "/event", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name }), keepalive: true,
+      }).catch(() => {});
+    } catch(e){}
+  },
+
+  /* ===== free practice for the topic they keep missing =====
+     Sending people somewhere free costs a click and buys a lot of goodwill. */
+  practiceUrl(topic){
+    return "https://www.khanacademy.org/search?page_search_query=" +
+           encodeURIComponent(String(topic || "").slice(0, 60) + " practice");
+  },
+
+  /* ===== KaTeX (math rendering) ===== */
+  katexReady: false,
+  loadKatex(){
+    const css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css";
+    document.head.appendChild(css);
+    const s1 = document.createElement("script");
+    s1.src = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js";
+    s1.onload = () => {
+      const s2 = document.createElement("script");
+      s2.src = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js";
+      s2.onload = () => { this.katexReady = true; };
+      document.head.appendChild(s2);
+    };
+    document.head.appendChild(s1);
+  },
+  renderMath(root){
+    if (!this.katexReady || !window.renderMathInElement) return;
+    root.querySelectorAll(".math").forEach(el => {
+      try { renderMathInElement(el, { delimiters: [{left:"$",right:"$",display:false}], throwOnError: false }); } catch(e){}
+    });
+  },
+
+  /* ===== history / recent ===== */
+  fmtDate(ts){
+    const d = new Date(ts);
+    return d.toLocaleDateString(undefined, { month:"short", day:"numeric" });
+  },
+  sortedHistory(){
+    return this.history.slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.id - a.id);
+  },
+  itemHtml(rec, withActions){
+    if (!rec || !rec.data) return "";   // a malformed saved scan must not blank the home screen
+    const m = rec.data.best_method || "desmos";
+    let actions = "";
+    if (withActions){
+      actions = '<span class="ri-actions">' +
+        '<button class="ri-btn' + (rec.pinned ? " pinned" : "") + '" title="' + (rec.pinned ? "Unpin" : "Pin") + '" onclick="App.togglePin(event,' + rec.id + ')">' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="' + (rec.pinned ? "currentColor" : "none") + '" stroke="currentColor" stroke-width="2"><path d="M12 17v5M9 3h6l1 7 3 2v2H5v-2l3-2 1-7z"/></svg></button>' +
+        '<button class="ri-btn" title="Delete" onclick="App.deleteScan(event,' + rec.id + ')">✕</button></span>';
+    } else if (rec.pinned){
+      actions = '<span class="ri-actions"><span class="ri-btn pinned" style="cursor:default"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M12 17v5M9 3h6l1 7 3 2v2H5v-2l3-2 1-7z"/></svg></span></span>';
+    }
+    return '<div class="recent-item" onclick="App.openHistory(' + rec.id + ')">' +
+      '<span class="tag ' + m + '">' + (m === "desmos" ? "DESMOS" : m === "hand" ? "BY HAND" : "HYBRID") + '</span>' +
+      '<span class="q">' + this.esc((rec.data.question_text || "").replace(/\$/g,"")) + '</span>' +
+      '<span class="d">' + this.fmtDate(rec.ts) + '</span>' + actions + '</div>';
+  },
+  renderRecent(){
+    const card = document.getElementById("recent-card");
+    const list = document.getElementById("recent-list");
+    if (!this.history.length){ card.style.display = "none"; return; }
+    card.style.display = "block";
+    list.innerHTML = this.sortedHistory().slice(0,3).map(r => this.itemHtml(r, false)).join("");
+  },
+  renderHistory(){
+    const list = document.getElementById("history-list");
+    const clearBtn = document.getElementById("hist-clear-btn");
+    if (clearBtn) clearBtn.style.display = this.history.length ? "inline-block" : "none";
+    if (!this.history.length){
+      list.innerHTML = '<p class="sub" style="margin:0">No scans yet. Your solved questions will appear here.</p>';
+      this.renderAccountCard();
+      return;
+    }
+    const qEl = document.getElementById("hist-search");
+    const q = qEl ? qEl.value.trim().toLowerCase() : "";
+    let items = this.sortedHistory();
+    if (q) items = items.filter(r =>
+      ((r.data.question_text || "") + " " + (r.data.topic || "")).toLowerCase().includes(q));
+    list.innerHTML = items.length
+      ? items.map(r => this.itemHtml(r, true)).join("")
+      : '<p class="sub" style="margin:0">Nothing matches "' + this.esc(q) + '".</p>';
+    this.renderAccountCard();
+  },
+  saveHistory(){
+    store.set("history", this.history);
+    this.renderHistory(); this.renderRecent(); this.renderHomeChips(); this.refreshBanner();
+    this.renderTopics();
+    this.pushHistory();
+    this.maybeOfferInstall();
+  },
+  togglePin(ev, id){
+    ev.stopPropagation();
+    const rec = this.history.find(r => r.id === id);
+    if (!rec) return;
+    rec.pinned = !rec.pinned;
+    this.saveHistory();
+    this.toast(rec.pinned ? "Pinned to top 📌" : "Unpinned");
+  },
+  deleteScan(ev, id){
+    ev.stopPropagation();
+    this.history = this.history.filter(r => r.id !== id);
+    this.saveHistory();
+    this.toast("Scan deleted");
+  },
+  confirmClearHistory(){
+    if (!this.history.length){ this.toast("History is already empty"); return; }
+    this.confirmSheet(
+      "Delete all " + this.history.length + " scans?",
+      "This permanently removes your entire scan history from this device. Pinned scans are deleted too.",
+      "Delete everything",
+      () => { this.history = []; this.saveHistory(); this.toast("History cleared"); },
+      true
+    );
+  },
+  openHistory(id){
+    const rec = this.history.find(r => r.id === id);
+    if (rec) this.showResult(JSON.parse(JSON.stringify(rec.data)), false);
+  },
+
+  /* ===== toast ===== */
+  toastTimer: null,
+  toast(msg){
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("on");
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(()=>t.classList.remove("on"), 2600);
+  }
+};
+
+App.init();
+</script>
+<script>
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+}
+</script>
+</body>
+</html>

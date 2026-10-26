@@ -1,0 +1,14 @@
+# The app shell must never be served stale — users would silently run old
+# versions for days after a deploy.
+/
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+/sw.js
+  Cache-Control: no-cache
+/manifest.json
+  Cache-Control: no-cache
+
+# Everything else is fine to cache hard.
+/*.png
+  Cache-Control: public, max-age=604800
