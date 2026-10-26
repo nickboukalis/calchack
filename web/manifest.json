@@ -1,0 +1,14 @@
+{
+  "name": "CalcHack — SAT Math, the Desmos Way",
+  "short_name": "CalcHack",
+  "description": "Snap any SAT math question. Get the fastest Desmos walkthrough with a live graph.",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0e1a",
+  "theme_color": "#0a0e1a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
